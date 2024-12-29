@@ -10,6 +10,7 @@
    lang/call.ml
    lang/ctx.ml
    lang/frame.ml
+   lang/grammar.ml
    lang/lang.a
    lang/lang.cma
    lang/lang.cmi
@@ -29,6 +30,9 @@
    lang/lang__Frame.cmi
    lang/lang__Frame.cmt
    lang/lang__Frame.cmx
+   lang/lang__Grammar.cmi
+   lang/lang__Grammar.cmt
+   lang/lang__Grammar.cmx
    lang/lang__Load.cmi
    lang/lang__Load.cmt
    lang/lang__Load.cmx
@@ -91,6 +95,10 @@
       (obj_name lang__Frame)
       (visibility public)
       (source (path Frame) (impl (path lang/frame.ml))))
+     (module
+      (obj_name lang__Grammar)
+      (visibility public)
+      (source (path Grammar) (impl (path lang/grammar.ml))))
      (module
       (obj_name lang__Load)
       (visibility public)

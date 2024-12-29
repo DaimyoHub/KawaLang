@@ -1,20 +1,5 @@
-open Type
-open Ast
 open Ctx
-open Sym
-
-type var
-type attr
-type meth
-type cls
-
-type _ decl =
-    Var    : symbol * typ                                                  -> var decl
-  | Attr   : symbol * typ                                                  -> attr decl
-  | Method : symbol * typ * (var decl) list * (var decl) list * instr list -> meth decl
-  | Class  : symbol * (attr decl) list * (meth decl) list                  -> cls decl
-
-type prog = Prog of (var decl) list * (cls decl) list * instr list
+open Grammar
 
 let rec load_vars ctx = function
     [] -> ()
@@ -23,6 +8,7 @@ let rec load_vars ctx = function
       LocalEnv.add ctx.vars sym var;
       load_vars ctx s
     )
+  | _ -> failwith "trying to load non variable structures"
 
 let rec load_attrs cls_ctx = function
     [] -> ()
@@ -30,6 +16,7 @@ let rec load_attrs cls_ctx = function
       LocalEnv.add cls_ctx.attrs sym { t = t; data = None };
       load_attrs cls_ctx s
     )
+  | _ -> failwith "trying to load non attribute structures"
 
 let rec load_meths cls_ctx = function
     [] -> ()
@@ -48,6 +35,7 @@ let rec load_meths cls_ctx = function
       in
       MethDefTable.add cls_ctx.meths sym meth_ctx;
       load_meths cls_ctx s
+    | _ -> failwith "trying to load non method structures"
 
 let rec load_classes ctx = function
     [] -> ()
@@ -61,4 +49,5 @@ let rec load_classes ctx = function
       load_meths cls_ctx meths;
       ClsDefTable.add ctx.classes sym cls_ctx;
       load_classes ctx s
+  | _ -> failwith "trying to load non class structures"
 

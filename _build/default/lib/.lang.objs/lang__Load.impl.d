@@ -1,1 +1,1 @@
-lib/load.ml: Ast ClsDefTable Ctx List LocalEnv MethDefTable Sym Type
+lib/load.ml: ClsDefTable Ctx Grammar List LocalEnv MethDefTable

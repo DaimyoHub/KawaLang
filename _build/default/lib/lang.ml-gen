@@ -12,6 +12,9 @@ module Ctx = Lang__Ctx
 (** @canonical Lang.Frame *)
 module Frame = Lang__Frame
 
+(** @canonical Lang.Grammar *)
+module Grammar = Lang__Grammar
+
 (** @canonical Lang.Load *)
 module Load = Lang__Load
 
