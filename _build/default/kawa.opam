@@ -1,0 +1,20 @@
+opam-version: "2.2"
+maintainer: "alexis.pocquet@universite-paris-saclay.fr"
+authors: ["Alexis Pocquet"]
+
+homepage: "https://github.com/DaimyoHub/KawaLang"
+version: "dev"
+
+synopsis: "_Kawa toy language interpreter_"
+
+build: [
+  ["dune" "subst"] {pinned}
+  ["dune" "build" "-p" name "-j" jobs]
+]
+
+run-test: ["dune" "runtest" "-p" name]
+
+depends: [
+  "dune"
+  "menhir"
+]

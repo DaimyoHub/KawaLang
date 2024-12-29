@@ -1,0 +1,11 @@
+Le contenu de ce fichier doit être ajouté au fichier lib/dune une fois qu'il sera possible
+d'utiliser le lexer et le parser.
+
+(ocamllex
+  (modules lex))
+
+(menhir
+  (modules parse)
+  (flags --explain --dump)
+  (infer true))
+
