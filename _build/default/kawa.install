@@ -1,0 +1,69 @@
+lib: [
+  "_build/install/default/lib/kawa/META"
+  "_build/install/default/lib/kawa/dune-package"
+  "_build/install/default/lib/kawa/lang/ast.ml" {"lang/ast.ml"}
+  "_build/install/default/lib/kawa/lang/call.ml" {"lang/call.ml"}
+  "_build/install/default/lib/kawa/lang/ctx.ml" {"lang/ctx.ml"}
+  "_build/install/default/lib/kawa/lang/frame.ml" {"lang/frame.ml"}
+  "_build/install/default/lib/kawa/lang/grammar.ml" {"lang/grammar.ml"}
+  "_build/install/default/lib/kawa/lang/interpreter.ml" {"lang/interpreter.ml"}
+  "_build/install/default/lib/kawa/lang/lang.a" {"lang/lang.a"}
+  "_build/install/default/lib/kawa/lang/lang.cma" {"lang/lang.cma"}
+  "_build/install/default/lib/kawa/lang/lang.cmi" {"lang/lang.cmi"}
+  "_build/install/default/lib/kawa/lang/lang.cmt" {"lang/lang.cmt"}
+  "_build/install/default/lib/kawa/lang/lang.cmx" {"lang/lang.cmx"}
+  "_build/install/default/lib/kawa/lang/lang.cmxa" {"lang/lang.cmxa"}
+  "_build/install/default/lib/kawa/lang/lang.ml" {"lang/lang.ml"}
+  "_build/install/default/lib/kawa/lang/lang__Ast.cmi" {"lang/lang__Ast.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Ast.cmt" {"lang/lang__Ast.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Ast.cmx" {"lang/lang__Ast.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Call.cmi" {"lang/lang__Call.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Call.cmt" {"lang/lang__Call.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Call.cmx" {"lang/lang__Call.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Ctx.cmi" {"lang/lang__Ctx.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Ctx.cmt" {"lang/lang__Ctx.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Ctx.cmx" {"lang/lang__Ctx.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Frame.cmi" {"lang/lang__Frame.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Frame.cmt" {"lang/lang__Frame.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Frame.cmx" {"lang/lang__Frame.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Grammar.cmi" {"lang/lang__Grammar.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Grammar.cmt" {"lang/lang__Grammar.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Grammar.cmx" {"lang/lang__Grammar.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Interpreter.cmi" {"lang/lang__Interpreter.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Interpreter.cmt" {"lang/lang__Interpreter.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Interpreter.cmx" {"lang/lang__Interpreter.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Loader.cmi" {"lang/lang__Loader.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Loader.cmt" {"lang/lang__Loader.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Loader.cmx" {"lang/lang__Loader.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Symbol.cmi" {"lang/lang__Symbol.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Symbol.cmt" {"lang/lang__Symbol.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Symbol.cmx" {"lang/lang__Symbol.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Symbol_resolver.cmi" {"lang/lang__Symbol_resolver.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Symbol_resolver.cmt" {"lang/lang__Symbol_resolver.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Symbol_resolver.cmx" {"lang/lang__Symbol_resolver.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Type.cmi" {"lang/lang__Type.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Type.cmt" {"lang/lang__Type.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Type.cmx" {"lang/lang__Type.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Type_checker.cmi" {"lang/lang__Type_checker.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Type_checker.cmt" {"lang/lang__Type_checker.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Type_checker.cmx" {"lang/lang__Type_checker.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Type_error.cmi" {"lang/lang__Type_error.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Type_error.cmt" {"lang/lang__Type_error.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Type_error.cmx" {"lang/lang__Type_error.cmx"}
+  "_build/install/default/lib/kawa/lang/loader.ml" {"lang/loader.ml"}
+  "_build/install/default/lib/kawa/lang/symbol.ml" {"lang/symbol.ml"}
+  "_build/install/default/lib/kawa/lang/symbol_resolver.ml" {"lang/symbol_resolver.ml"}
+  "_build/install/default/lib/kawa/lang/type.ml" {"lang/type.ml"}
+  "_build/install/default/lib/kawa/lang/type_checker.ml" {"lang/type_checker.ml"}
+  "_build/install/default/lib/kawa/lang/type_error.ml" {"lang/type_error.ml"}
+  "_build/install/default/lib/kawa/opam"
+]
+libexec: [
+  "_build/install/default/lib/kawa/lang/lang.cmxs" {"lang/lang.cmxs"}
+]
+bin: [
+  "_build/install/default/bin/kawa.interpreter"
+]
+doc: [
+  "_build/install/default/doc/kawa/README.md"
+]

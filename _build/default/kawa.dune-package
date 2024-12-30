@@ -1,0 +1,139 @@
+(lang dune 3.15)
+(name kawa)
+(version dev)
+(sections (lib .) (libexec .) (bin ../../bin) (doc ../../doc/kawa))
+(files
+ (lib
+  (META
+   dune-package
+   lang/ast.ml
+   lang/context.ml
+   lang/environment.ml
+   lang/interpreter.ml
+   lang/lang.a
+   lang/lang.cma
+   lang/lang.cmi
+   lang/lang.cmt
+   lang/lang.cmx
+   lang/lang.cmxa
+   lang/lang.ml
+   lang/lang__Ast.cmi
+   lang/lang__Ast.cmt
+   lang/lang__Ast.cmx
+   lang/lang__Context.cmi
+   lang/lang__Context.cmt
+   lang/lang__Context.cmx
+   lang/lang__Environment.cmi
+   lang/lang__Environment.cmt
+   lang/lang__Environment.cmx
+   lang/lang__Interpreter.cmi
+   lang/lang__Interpreter.cmt
+   lang/lang__Interpreter.cmx
+   lang/lang__Lexer.cmi
+   lang/lang__Lexer.cmt
+   lang/lang__Lexer.cmx
+   lang/lang__Loader.cmi
+   lang/lang__Loader.cmt
+   lang/lang__Loader.cmx
+   lang/lang__Parser.cmi
+   lang/lang__Parser.cmt
+   lang/lang__Parser.cmti
+   lang/lang__Parser.cmx
+   lang/lang__Symbol.cmi
+   lang/lang__Symbol.cmt
+   lang/lang__Symbol.cmx
+   lang/lang__Symbol_resolver.cmi
+   lang/lang__Symbol_resolver.cmt
+   lang/lang__Symbol_resolver.cmx
+   lang/lang__Type.cmi
+   lang/lang__Type.cmt
+   lang/lang__Type.cmx
+   lang/lang__Type_checker.cmi
+   lang/lang__Type_checker.cmt
+   lang/lang__Type_checker.cmx
+   lang/lang__Type_error.cmi
+   lang/lang__Type_error.cmt
+   lang/lang__Type_error.cmx
+   lang/lexer.ml
+   lang/loader.ml
+   lang/parser.ml
+   lang/parser.mli
+   lang/symbol.ml
+   lang/symbol_resolver.ml
+   lang/type.ml
+   lang/type_checker.ml
+   lang/type_error.ml
+   opam))
+ (libexec (lang/lang.cmxs))
+ (bin (kawa.interpreter))
+ (doc (README.md)))
+(library
+ (name kawa.lang)
+ (kind normal)
+ (archives (byte lang/lang.cma) (native lang/lang.cmxa))
+ (plugins (byte lang/lang.cma) (native lang/lang.cmxs))
+ (native_archives lang/lang.a)
+ (main_module_name Lang)
+ (modes byte native)
+ (modules
+  (wrapped
+   (group
+    (alias
+     (obj_name lang)
+     (visibility public)
+     (kind alias)
+     (source (path Lang) (impl (path lang/lang.ml-gen))))
+    (name Lang)
+    (modules
+     (module
+      (obj_name lang__Ast)
+      (visibility public)
+      (source (path Ast) (impl (path lang/ast.ml))))
+     (module
+      (obj_name lang__Context)
+      (visibility public)
+      (source (path Context) (impl (path lang/context.ml))))
+     (module
+      (obj_name lang__Environment)
+      (visibility public)
+      (source (path Environment) (impl (path lang/environment.ml))))
+     (module
+      (obj_name lang__Interpreter)
+      (visibility public)
+      (source (path Interpreter) (impl (path lang/interpreter.ml))))
+     (module
+      (obj_name lang__Lexer)
+      (visibility public)
+      (source (path Lexer) (impl (path lang/lexer.ml))))
+     (module
+      (obj_name lang__Loader)
+      (visibility public)
+      (source (path Loader) (impl (path lang/loader.ml))))
+     (module
+      (obj_name lang__Parser)
+      (visibility public)
+      (source
+       (path Parser)
+       (intf (path lang/parser.mli))
+       (impl (path lang/parser.ml))))
+     (module
+      (obj_name lang__Symbol)
+      (visibility public)
+      (source (path Symbol) (impl (path lang/symbol.ml))))
+     (module
+      (obj_name lang__Symbol_resolver)
+      (visibility public)
+      (source (path Symbol_resolver) (impl (path lang/symbol_resolver.ml))))
+     (module
+      (obj_name lang__Type)
+      (visibility public)
+      (source (path Type) (impl (path lang/type.ml))))
+     (module
+      (obj_name lang__Type_checker)
+      (visibility public)
+      (source (path Type_checker) (impl (path lang/type_checker.ml))))
+     (module
+      (obj_name lang__Type_error)
+      (visibility public)
+      (source (path Type_error) (impl (path lang/type_error.ml))))))
+   (wrapped true))))
