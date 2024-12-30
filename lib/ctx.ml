@@ -42,8 +42,6 @@ module Make (V : Value) : Env
       try
         Some (Hashtbl.find env k)
       with Not_found -> None  
-
-    let fold = Hashtbl.fold
   end
 
 type data =
