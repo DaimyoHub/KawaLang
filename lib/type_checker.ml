@@ -33,7 +33,6 @@ let type_mem_loc global_ctx local_env sym =
 let rec type_expr global_ctx local_env expr =
   let tml = type_mem_loc global_ctx local_env
   and tbo = type_bin_op global_ctx local_env
-  and targs = type_args global_ctx local_env
   and texpr = type_expr global_ctx local_env
   in
   match expr with
@@ -59,8 +58,7 @@ let rec type_expr global_ctx local_env expr =
         match get_class_from_symbol global_ctx class_symbol with
           Ok cls -> (
             match get_method_from_class cls class_symbol with
-              Ok ctor ->
-                targs class_symbol (Cls class_symbol) args ctor.params
+              Ok ctor -> type_inst global_ctx local_env cls ctor args
             | _ ->
                 report_symbol_resolv (Class_without_ctor class_symbol)
           )
@@ -112,6 +110,23 @@ and type_call global_ctx local_env caller callee args =
   match targs callee.sym callee.ret_typ args callee.params with
     Ok rt -> check_seq global_ctx calling_env rt callee.code
   | Error rep -> propagate rep
+
+
+(*
+ * type_inst context env caller callee args
+ *
+ * Types a call to a given ctor. It checks if passed argument types correspond to
+ * parameter types, then it recursivelly checks the if the ctor code is well-typed.
+ *)
+and type_inst global_ctx local_env cls ctor args =
+  let targs = type_args global_ctx local_env in
+  match targs ctor.sym Void args ctor.params with
+    Ok Void ->
+      check_seq global_ctx cls.attrs Void ctor.code
+  | Ok t ->
+      report (Some Void) (Some t) Void_method_return
+  | Error rep -> propagate rep
+
 
 
 (*
