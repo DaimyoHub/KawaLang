@@ -1,1 +1,0 @@
-lib/type.ml: Sym
