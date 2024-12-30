@@ -1,4 +1,6 @@
 open Sym
+open Ast
+open Type
 
 module type Env = 
   sig
@@ -42,26 +44,37 @@ module Make (V : Value) : Env
       with Not_found -> None  
   end
 
-type variable = {
-  t    : Type.typ;
-  data : Ast.expr option
+type data =
+    No_data
+  | Expr of expr
+  | Obj  of (symbol, typ * data) Hashtbl.t
+
+type loc = {
+  typ  : Type.typ;
+  data : data;
 }
 
+let get_object_attributes loc =
+  match loc.data with
+    Obj attrs -> attrs
+  | _ -> raise (Invalid_argument "arg is not an object")
+
 module LocalEnv : Env 
-    with type v = variable
+    with type v = loc
     and  type k = symbol 
-  = Make (struct type t = variable end)
+  = Make (struct type t = loc end)
 
 type method_def = {
+  sym     : symbol;
   ret_typ : Type.typ;
   params  : Type.typ list;
   locals  : LocalEnv.t;
-  code    : Ast.instr list
+  code    : instr list
 }
 
 module MethDefTable : Env 
     with type v = method_def
-    and type k = symbol
+    and  type k = symbol
   = Make (struct type t = method_def end)
 
 type class_def = {
@@ -72,11 +85,12 @@ type class_def = {
 
 module ClsDefTable : Env
     with type v = class_def 
-    and type k = symbol
+    and  type k = symbol
   = Make (struct type t = class_def end)
 
 type global_ctx = {
-  vars    : LocalEnv.t;
-  classes : ClsDefTable.t
+  locs    : LocalEnv.t;
+  classes : ClsDefTable.t;
+  mutable current_frame_id : int
 }
 

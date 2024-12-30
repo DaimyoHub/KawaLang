@@ -1,8 +1,5 @@
 open Sym
 
-exception Expr_is_not_loc
-exception Cond_is_not_bool
-
 type expr =
   (* Constants & symbols *)
     Cst of int
@@ -42,5 +39,4 @@ type instr =
   | While  of expr * instr list
   | Ret    of expr
   | Ignore of expr
- 
 

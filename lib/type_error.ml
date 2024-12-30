@@ -7,7 +7,7 @@ type sym_res_err_kind =
   | Loc_not_found       of symbol
   | Class_without_ctor  of symbol
   | Method_not_in_class of symbol * symbol
-  | Not_loc             of expr
+  | Not_loc             of symbol
 
 
 type typ_err_kind =
@@ -27,6 +27,7 @@ type typ_err_kind =
   | Unexpected_type         of expr
   | Expected_void_instr     of instr
   | Ill_typed               of instr
+  | Branches_not_return_same
 
 
 type typ_err_report = {
@@ -98,6 +99,8 @@ let pprint rep =
       "Expected void instruction"
   | Ill_typed _ ->
       "Instruction is ill typed"
+  | Branches_not_return_same ->
+      "Both branches of an if statement must be samely typed."
 
 let report exp obt kind =
   let rep = {

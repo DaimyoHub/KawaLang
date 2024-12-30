@@ -15,20 +15,23 @@ module Frame = Lang__Frame
 (** @canonical Lang.Grammar *)
 module Grammar = Lang__Grammar
 
-(** @canonical Lang.Load *)
-module Load = Lang__Load
+(** @canonical Lang.Interpreter *)
+module Interpreter = Lang__Interpreter
+
+(** @canonical Lang.Loader *)
+module Loader = Lang__Loader
 
 (** @canonical Lang.Sym *)
 module Sym = Lang__Sym
 
-(** @canonical Lang.Symbol_resolv *)
-module Symbol_resolv = Lang__Symbol_resolv
+(** @canonical Lang.Symbol_resolver *)
+module Symbol_resolver = Lang__Symbol_resolver
 
 (** @canonical Lang.Type *)
 module Type = Lang__Type
 
-(** @canonical Lang.Type_check *)
-module Type_check = Lang__Type_check
+(** @canonical Lang.Type_checker *)
+module Type_checker = Lang__Type_checker
 
 (** @canonical Lang.Type_error *)
 module Type_error = Lang__Type_error

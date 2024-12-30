@@ -7,12 +7,12 @@ open Grammar
  *
  * Loads the given variable declaration list in the given context.
  *)
-let rec load_variables ctx = function
+let rec load_variables env = function
     [] -> ()
   | Var (sym, t) :: s -> (
-      let var = { t = t; data = None } in
-      LocalEnv.add ctx.vars sym var;
-      load_variables ctx s
+      let var = { typ = t; data = No_data } in
+      LocalEnv.add env sym var;
+      load_variables env s
     )
   | _ -> failwith "trying to load non variable structures"
 
@@ -22,10 +22,10 @@ let rec load_variables ctx = function
  * 
  * Load the given attribute declaration list in the given class context.
  *)
-let rec load_attributes class_ctx = function
+let rec load_attributes (class_ctx : class_def) = function
     [] -> ()
   | Attr (sym, t) :: s -> (
-      LocalEnv.add class_ctx.attrs sym { t = t; data = None };
+      LocalEnv.add class_ctx.attrs sym { typ = t; data = No_data };
       load_attributes class_ctx s
     )
   | _ -> failwith "trying to load non attribute structures"
@@ -40,6 +40,7 @@ let rec load_methods class_ctx = function
     [] -> ()
   | Method (sym, rt, params, locals, code) :: s ->
       let meth_ctx = {
+        sym = sym;
         ret_typ = rt;
         params =
           List.map (fun p ->
@@ -51,7 +52,7 @@ let rec load_methods class_ctx = function
           List.fold_left (fun acc x ->
             match x with 
               Var (sym, typ) -> (
-                LocalEnv.add acc sym { t = typ; data = None };
+                LocalEnv.add acc sym { typ = typ; data = No_data };
                 acc
               )
             | _ -> failwith "object is not a variable"
@@ -72,14 +73,14 @@ let rec load_methods class_ctx = function
 let rec load_classes ctx = function
     [] -> ()
   | Class (sym, attrs, meths) :: s -> 
-      let cls_ctx = {
+      let class_ctx = {
         sym = sym;
         attrs = LocalEnv.create ();
         meths = MethDefTable.create ()
       } in
-      load_attributes cls_ctx attrs;
-      load_methods cls_ctx meths;
-      ClsDefTable.add ctx.classes sym cls_ctx;
+      load_attributes class_ctx attrs;
+      load_methods class_ctx meths;
+      ClsDefTable.add ctx.classes sym class_ctx;
       load_classes ctx s
   | _ -> failwith "trying to load non class structures"
 

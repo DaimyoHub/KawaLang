@@ -1,8 +1,10 @@
-open Lang.Type_check
+(*
+open Lang.Type_checker
 open Lang.Ctx
 open Lang.Ast
 
 
+(*
 let () =
   let ctx = { vars = LocalEnv.create (); classes = ClsDefTable.create () } in
   LocalEnv.add ctx.vars (Sym "test") { t = Bool; data = Some (Cst 8) };
@@ -14,3 +16,5 @@ let () =
     Ret (Add (Loc (Sym "test"), Cst 4))
   ] in
   let _ = check_seq ctx Int is in ()
+*)
+*)

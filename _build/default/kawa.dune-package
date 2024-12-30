@@ -11,6 +11,7 @@
    lang/ctx.ml
    lang/frame.ml
    lang/grammar.ml
+   lang/interpreter.ml
    lang/lang.a
    lang/lang.cma
    lang/lang.cmi
@@ -33,29 +34,32 @@
    lang/lang__Grammar.cmi
    lang/lang__Grammar.cmt
    lang/lang__Grammar.cmx
-   lang/lang__Load.cmi
-   lang/lang__Load.cmt
-   lang/lang__Load.cmx
+   lang/lang__Interpreter.cmi
+   lang/lang__Interpreter.cmt
+   lang/lang__Interpreter.cmx
+   lang/lang__Loader.cmi
+   lang/lang__Loader.cmt
+   lang/lang__Loader.cmx
    lang/lang__Sym.cmi
    lang/lang__Sym.cmt
    lang/lang__Sym.cmx
-   lang/lang__Symbol_resolv.cmi
-   lang/lang__Symbol_resolv.cmt
-   lang/lang__Symbol_resolv.cmx
+   lang/lang__Symbol_resolver.cmi
+   lang/lang__Symbol_resolver.cmt
+   lang/lang__Symbol_resolver.cmx
    lang/lang__Type.cmi
    lang/lang__Type.cmt
    lang/lang__Type.cmx
-   lang/lang__Type_check.cmi
-   lang/lang__Type_check.cmt
-   lang/lang__Type_check.cmx
+   lang/lang__Type_checker.cmi
+   lang/lang__Type_checker.cmt
+   lang/lang__Type_checker.cmx
    lang/lang__Type_error.cmi
    lang/lang__Type_error.cmt
    lang/lang__Type_error.cmx
-   lang/load.ml
+   lang/loader.ml
    lang/sym.ml
-   lang/symbol_resolv.ml
+   lang/symbol_resolver.ml
    lang/type.ml
-   lang/type_check.ml
+   lang/type_checker.ml
    lang/type_error.ml
    opam))
  (libexec (lang/lang.cmxs))
@@ -100,25 +104,29 @@
       (visibility public)
       (source (path Grammar) (impl (path lang/grammar.ml))))
      (module
-      (obj_name lang__Load)
+      (obj_name lang__Interpreter)
       (visibility public)
-      (source (path Load) (impl (path lang/load.ml))))
+      (source (path Interpreter) (impl (path lang/interpreter.ml))))
+     (module
+      (obj_name lang__Loader)
+      (visibility public)
+      (source (path Loader) (impl (path lang/loader.ml))))
      (module
       (obj_name lang__Sym)
       (visibility public)
       (source (path Sym) (impl (path lang/sym.ml))))
      (module
-      (obj_name lang__Symbol_resolv)
+      (obj_name lang__Symbol_resolver)
       (visibility public)
-      (source (path Symbol_resolv) (impl (path lang/symbol_resolv.ml))))
+      (source (path Symbol_resolver) (impl (path lang/symbol_resolver.ml))))
      (module
       (obj_name lang__Type)
       (visibility public)
       (source (path Type) (impl (path lang/type.ml))))
      (module
-      (obj_name lang__Type_check)
+      (obj_name lang__Type_checker)
       (visibility public)
-      (source (path Type_check) (impl (path lang/type_check.ml))))
+      (source (path Type_checker) (impl (path lang/type_checker.ml))))
      (module
       (obj_name lang__Type_error)
       (visibility public)

@@ -1,1 +1,1 @@
-lib/frame.ml: Ast Ctx List LocalEnv
+lib/frame.ml: Ctx LocalEnv Sym
