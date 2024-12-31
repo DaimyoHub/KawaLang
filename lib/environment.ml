@@ -1,5 +1,5 @@
 open Symbol
-open Ast
+open Abstract_syntax
 open Type
 
 module type Env_t = 

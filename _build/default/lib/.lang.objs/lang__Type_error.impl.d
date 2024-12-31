@@ -1,1 +1,1 @@
-lib/type_error.ml: Ast Printf Symbol Type
+lib/type_error.ml: Abstract_syntax Printf Symbol Type

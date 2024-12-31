@@ -1,0 +1,59 @@
+type token =
+    WHILE
+  | VOID
+  | VAR
+  | TRUE
+  | TIMES
+  | THIS
+  | SET
+  | SEMI
+  | RPAR
+  | RETURN
+  | PRINT
+  | PLUS
+  | OR
+  | NUM of int
+  | NOT
+  | NEW
+  | NEQUALS
+  | MODULO
+  | MINUS
+  | METHOD
+  | MAIN
+  | LPAR
+  | LESS_EQUALS
+  | LESS
+  | INT
+  | IF
+  | IDENT of string
+  | FALSE
+  | EQUALS
+  | EOF
+  | END
+  | ELSE
+  | DOT
+  | DIVIDES
+  | COMMA
+  | CLS of string
+  | CLASS
+  | BOOL
+  | BEGIN
+  | ATTR
+  | AND
+val menhir_begin_marker : int
+val xv_var_decl : Environment.loc
+val xv_typ : Type.typ
+val xv_program : Context.prog_ctx
+val xv_param_def : Environment.loc list
+val xv_method_def : Context.method_def
+val xv_list_var_decl_ : Environment.loc list
+val xv_list_method_def_ : Context.method_def list
+val xv_list_instr_ : Abstract_syntax.instr list
+val xv_list_class_def_ : Context.class_def list
+val xv_list_attr_decl_ : Environment.loc list
+val xv_instr : Abstract_syntax.instr
+val xv_expr : Abstract_syntax.expr
+val xv_class_def : Context.class_def
+val xv_attr_decl : Environment.loc
+val xv_args : Abstract_syntax.expr list
+val menhir_end_marker : int

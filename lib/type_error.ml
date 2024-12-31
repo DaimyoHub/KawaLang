@@ -1,5 +1,5 @@
 open Symbol
-open Ast
+open Abstract_syntax
 open Type
 
 type sym_res_err_kind = 

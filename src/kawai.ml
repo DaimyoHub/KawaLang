@@ -1,20 +1,11 @@
-(*
-open Lang.Type_checker
-open Lang.Ctx
-open Lang.Ast
+open Lang
 
 
-(*
-let () =
-  let ctx = { vars = LocalEnv.create (); classes = ClsDefTable.create () } in
-  LocalEnv.add ctx.vars (Sym "test") { t = Bool; data = Some (Cst 8) };
-  let is = [
-    Set (Sym "test", Cst 0);
-    If (True,
-      [Set (Sym "test", Cst 1)],
-      [Set (Sym "test", Cst (-1))]);
-    Ret (Add (Loc (Sym "test"), Cst 4))
-  ] in
-  let _ = check_seq ctx Int is in ()
-*)
-*)
+let _ =
+  let lexbuf = In_channel.open_text "test.kwa" 
+    |> Lexing.from_channel
+  in
+  let prog = Parser.program Lexer.token lexbuf in
+  match Type_checker.check_seq prog (Environment.Env.create ()) Type.Void prog.main with
+    Ok _ -> print_endline "yay"
+  | Error _ -> print_endline "nop"

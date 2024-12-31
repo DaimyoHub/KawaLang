@@ -1,7 +1,7 @@
 open Type
 open Context
 open Environment
-open Ast
+open Abstract_syntax
 open Symbol_resolver
 open Symbol
 open Type_error
@@ -243,7 +243,11 @@ and check_instr ctx env exp instr =
           report (Some Bool) rep.obtained (Cond_not_bool cond)
     )
   | Ret e -> chk e exp
-  | Ignore _ -> Ok Void
+  | Ignore e -> (
+      match type_expr ctx env e with
+        Ok _ -> Ok Void
+      | Error rep -> propagate rep
+    )
 
 
 (*

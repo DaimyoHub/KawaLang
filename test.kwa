@@ -1,0 +1,8 @@
+var int test;
+
+main {
+  test = 8;
+  print(test);
+  test.hello();
+}
+

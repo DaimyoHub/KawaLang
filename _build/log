@@ -13,27 +13,35 @@
 #  ; build_dir = In_build_dir "default"
 #  ; instrument_with = []
 #  }
-$ /home/daimyo/.opam/default/bin/ocamlc.opt -config > /tmp/dune_a9b78a_output
-$ (cd _build/default && /home/daimyo/.opam/default/bin/menhir --explain --dump lib/parser.mly --base lib/parser --infer-write-query lib/parser__mock.ml.mock)
-> File "lib/parser.mly", line 29, characters 10-14:
-> Warning: the token ELSE is unused.
-> File "lib/parser.mly", line 30, characters 12-17:
-> Warning: the token FALSE is unused.
-> File "lib/parser.mly", line 29, characters 7-9:
-> Warning: the token IF is unused.
-> File "lib/parser.mly", line 22, characters 7-10:
-> Warning: the token NEW is unused.
-> File "lib/parser.mly", line 29, characters 21-27:
-> Warning: the token RETURN is unused.
-> File "lib/parser.mly", line 21, characters 7-11:
-> Warning: the token THIS is unused.
-> File "lib/parser.mly", line 30, characters 7-11:
-> Warning: the token TRUE is unused.
-> File "lib/parser.mly", line 29, characters 15-20:
-> Warning: the token WHILE is unused.
-$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamldep.opt -modules -impl lib/parser__mock.ml.mock) > _build/default/lib/.lang.objs/parser__mock.impl.d
-$ (cd _build/.sandbox/e9c8214da6442504abaa7b1279e422c5/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -open Lang -short-paths -i -impl lib/parser__mock.ml.mock) > _build/.sandbox/e9c8214da6442504abaa7b1279e422c5/default/lib/parser__mock.mli.inferred
-> File "lib/parser.mly", line 50, characters 38-39:
-> Error: This expression has type loc but an expression was expected of type
->          class_def
-[2]
+$ /home/daimyo/.opam/default/bin/ocamlc.opt -config > /tmp/dune_9130ef_output
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamldep.opt -modules -impl lib/abstract_syntax.ml) > _build/default/lib/.lang.objs/lang__Abstract_syntax.impl.d
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Abstract_syntax.cmo -c -impl lib/abstract_syntax.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/native/lang__Abstract_syntax.cmx -c -impl lib/abstract_syntax.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Environment.cmo -c -impl lib/environment.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Type_error.cmo -c -impl lib/type_error.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Context.cmo -c -impl lib/context.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/native/lang__Environment.cmx -c -impl lib/environment.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Symbol_resolver.cmo -c -impl lib/symbol_resolver.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/native/lang__Type_error.cmx -c -impl lib/type_error.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/native/lang__Context.cmx -c -impl lib/context.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Interpreter.cmo -c -impl lib/interpreter.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/native/lang__Symbol_resolver.cmx -c -impl lib/symbol_resolver.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/native/lang__Interpreter.cmx -c -impl lib/interpreter.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Type_checker.cmo -c -impl lib/type_checker.ml)
+$ (cd _build/.sandbox/d769cbf16d374b7770f70ae8f3e2ed07/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -open Lang -short-paths -i -impl lib/parser__mock.ml.mock) > _build/.sandbox/d769cbf16d374b7770f70ae8f3e2ed07/default/lib/parser__mock.mli.inferred
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/native/lang__Type_checker.cmx -c -impl lib/type_checker.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/menhir --explain --dump lib/parser.mly --base lib/parser --infer-read-reply lib/parser__mock.mli.inferred)
+> Warning: one state has shift/reduce conflicts.
+> Warning: one shift/reduce conflict was arbitrarily resolved.
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Parser.cmi -c -intf lib/parser.mli)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Lexer.cmo -c -impl lib/lexer.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamldep.opt -modules -impl lib/parser.ml) > _build/default/lib/.lang.objs/lang__Parser.impl.d
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I src/.kawai.eobjs/byte -I lib/.lang.objs/byte -no-alias-deps -opaque -o src/.kawai.eobjs/byte/dune__exe__Kawai.cmo -c -impl src/kawai.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/native/lang__Lexer.cmx -c -impl lib/lexer.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I src/.kawai.eobjs/byte -I src/.kawai.eobjs/native -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -o src/.kawai.eobjs/native/dune__exe__Kawai.cmx -c -impl src/kawai.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -bin-annot -I lib/.lang.objs/byte -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/byte/lang__Parser.cmo -c -impl lib/parser.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlc.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -a -o lib/lang.cma lib/.lang.objs/byte/lang.cmo lib/.lang.objs/byte/lang__Symbol.cmo lib/.lang.objs/byte/lang__Abstract_syntax.cmo lib/.lang.objs/byte/lang__Type.cmo lib/.lang.objs/byte/lang__Type_error.cmo lib/.lang.objs/byte/lang__Environment.cmo lib/.lang.objs/byte/lang__Context.cmo lib/.lang.objs/byte/lang__Symbol_resolver.cmo lib/.lang.objs/byte/lang__Type_checker.cmo lib/.lang.objs/byte/lang__Parser.cmo lib/.lang.objs/byte/lang__Lexer.cmo lib/.lang.objs/byte/lang__Interpreter.cmo)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -I lib/.lang.objs/byte -I lib/.lang.objs/native -intf-suffix .ml -no-alias-deps -opaque -open Lang -o lib/.lang.objs/native/lang__Parser.cmx -c -impl lib/parser.ml)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -a -o lib/lang.cmxa lib/.lang.objs/native/lang.cmx lib/.lang.objs/native/lang__Symbol.cmx lib/.lang.objs/native/lang__Abstract_syntax.cmx lib/.lang.objs/native/lang__Type.cmx lib/.lang.objs/native/lang__Type_error.cmx lib/.lang.objs/native/lang__Environment.cmx lib/.lang.objs/native/lang__Context.cmx lib/.lang.objs/native/lang__Symbol_resolver.cmx lib/.lang.objs/native/lang__Type_checker.cmx lib/.lang.objs/native/lang__Parser.cmx lib/.lang.objs/native/lang__Lexer.cmx lib/.lang.objs/native/lang__Interpreter.cmx)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -shared -linkall -I lib -o lib/lang.cmxs lib/lang.cmxa)
+$ (cd _build/default && /home/daimyo/.opam/default/bin/ocamlopt.opt -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs -g -o src/kawai.exe lib/lang.cmxa src/.kawai.eobjs/native/dune__exe__Kawai.cmx)

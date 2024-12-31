@@ -1,1 +1,1 @@
-lib/environment.ml: Ast Hashtbl Symbol Type
+lib/environment.ml: Abstract_syntax Hashtbl Symbol Type

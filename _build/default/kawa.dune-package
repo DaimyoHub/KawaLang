@@ -6,7 +6,7 @@
  (lib
   (META
    dune-package
-   lang/ast.ml
+   lang/abstract_syntax.ml
    lang/context.ml
    lang/environment.ml
    lang/interpreter.ml
@@ -17,9 +17,9 @@
    lang/lang.cmx
    lang/lang.cmxa
    lang/lang.ml
-   lang/lang__Ast.cmi
-   lang/lang__Ast.cmt
-   lang/lang__Ast.cmx
+   lang/lang__Abstract_syntax.cmi
+   lang/lang__Abstract_syntax.cmt
+   lang/lang__Abstract_syntax.cmx
    lang/lang__Context.cmi
    lang/lang__Context.cmt
    lang/lang__Context.cmx
@@ -32,9 +32,6 @@
    lang/lang__Lexer.cmi
    lang/lang__Lexer.cmt
    lang/lang__Lexer.cmx
-   lang/lang__Loader.cmi
-   lang/lang__Loader.cmt
-   lang/lang__Loader.cmx
    lang/lang__Parser.cmi
    lang/lang__Parser.cmt
    lang/lang__Parser.cmti
@@ -55,7 +52,6 @@
    lang/lang__Type_error.cmt
    lang/lang__Type_error.cmx
    lang/lexer.ml
-   lang/loader.ml
    lang/parser.ml
    lang/parser.mli
    lang/symbol.ml
@@ -86,9 +82,9 @@
     (name Lang)
     (modules
      (module
-      (obj_name lang__Ast)
+      (obj_name lang__Abstract_syntax)
       (visibility public)
-      (source (path Ast) (impl (path lang/ast.ml))))
+      (source (path Abstract_syntax) (impl (path lang/abstract_syntax.ml))))
      (module
       (obj_name lang__Context)
       (visibility public)
@@ -105,10 +101,6 @@
       (obj_name lang__Lexer)
       (visibility public)
       (source (path Lexer) (impl (path lang/lexer.ml))))
-     (module
-      (obj_name lang__Loader)
-      (visibility public)
-      (source (path Loader) (impl (path lang/loader.ml))))
      (module
       (obj_name lang__Parser)
       (visibility public)

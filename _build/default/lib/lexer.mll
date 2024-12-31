@@ -56,6 +56,7 @@ rule token = parse
   | number as n          { NUM(int_of_string n) }
   | ident as id          { keyword_or_ident id }
 
+  | "."                  { DOT }
   | ","                  { COMMA }
   | ";"                  { SEMI }
   | "("                  { LPAR }
@@ -77,13 +78,15 @@ rule token = parse
   | "&&"                 { AND }
   | "||"                 { OR }
 
+  | "="                  { SET }
+
   (* Lexer cannot correctly parse the current lexbuf *)
-  | _                    { raise (Error ("unknown character : " ^ lexeme lexbuf)) }
+  | _                    { failwith ("unknown character : " ^ lexeme lexbuf) }
 
   | eof                  { EOF }
 
 and comment = parse
   | "*/"                 { () }
   | _                    { comment lexbuf }
-  | eof                  { raise (Error "unterminated comment") }
+  | eof                  { failwith "unterminated comment" }
 
