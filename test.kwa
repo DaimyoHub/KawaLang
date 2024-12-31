@@ -1,8 +1,26 @@
 var int test;
+var point p;
+
+class point {
+  attr int x;
+  attr int y;
+
+  method void point(int x, int y) {
+    this.x = x;
+    this.y = y;
+  }
+}
 
 main {
-  test = 8;
-  print(test);
-  test.hello();
+  p = new point(1, 2);
+
+  if (test <= 8 + 7 * 6 % 4 - 3) {
+    while (4 + 8) {
+      prin(test);
+    }
+  } else {
+    print(test.x);
+  }
 }
+
 

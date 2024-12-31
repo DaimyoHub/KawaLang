@@ -206,9 +206,20 @@ and check_instr ctx env exp instr =
         Ok _ -> Ok Void
       | err -> err
     )
+  | Set (sym, Inst (class_symbol, args)) -> (
+      match get_variable_type ctx env sym with
+        Ok (Cls class_symbol) -> (
+          match chk (Inst (class_symbol, args)) Void with
+            Ok _ -> Ok Void
+          | Error rep -> propagate rep
+        )
+      | Ok t ->
+          report (Some (Cls class_symbol)) (Some t) (Not_obj_inst (sym, class_symbol))
+      | Error rep -> propagate rep
+    )
   | Set (sym, e) -> (
       match get_variable_type ctx env sym with
-        Ok t -> (
+      | Ok t -> (
           match chk e t with
             Ok _ -> Ok Void
           | Error rep ->

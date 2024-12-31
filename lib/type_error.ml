@@ -28,6 +28,7 @@ type typ_err_kind =
   | Expected_void_instr     of instr
   | Ill_typed               of instr
   | Branches_not_return_same
+  | Not_obj_inst            of symbol * symbol
 
 
 type typ_err_report = {
@@ -101,6 +102,9 @@ let pprint rep =
       "Instruction is ill typed"
   | Branches_not_return_same ->
       "Both branches of an if statement must be samely typed."
+  | Not_obj_inst (Sym loc_sym, Sym cls_sym) ->
+      fmt "Cannot instanciate class '%s' with the variable '%s' not typed as '%s'"
+        cls_sym loc_sym cls_sym
 
 let report exp obt kind =
   let rep = {

@@ -10,7 +10,6 @@
 (* Types *)
 %token INT
 %token BOOL
-%token <string> CLS
 %token VOID
 
 %token MAIN
@@ -39,7 +38,6 @@
 %token SET
 %token <int> NUM
 
-%nonassoc SET
 %left NEQUALS EQUALS LESS_EQUALS LESS
 %left AND OR
 %left NOT
@@ -78,10 +76,10 @@ program:
 ;
 
 typ:
-| INT      { Int }
-| BOOL     { Bool }
-| VOID     { Void }
-| name=CLS { Cls (Sym name) }
+| INT        { Int }
+| BOOL       { Bool }
+| VOID       { Void }
+| name=IDENT { Cls (Sym name) }
 ;
 
 attr_decl:
@@ -154,7 +152,9 @@ instr:
     { Print(e) }
 | name=IDENT SET e=expr SEMI
     { Set (Sym name, e) }
-| obj=IDENT DOT attr=IDENT SET e=expr
+| THIS DOT attr=IDENT SET e=expr SEMI
+    { Set (Sym attr, e) }
+| obj=IDENT DOT attr=IDENT SET e=expr SEMI
     { Set (Sym (obj ^ "." ^ attr), e) }
 | IF LPAR cond=expr RPAR BEGIN is1=list(instr) END ELSE BEGIN is2=list(instr) END
     { If (cond, is1, is2) }
@@ -167,18 +167,22 @@ instr:
 ;
 
 args:
-| e=expr COMMA others=args { e :: others }
-| e=expr                   { [e] }
+| LPAR al=separated_list(COMMA, expr) RPAR { al }
 ;
 
 expr:
 | LPAR e=expr RPAR                                  { e }
-| n=NUM                                             { Cst n }
+| n=NUM                                             { Cst (n) }
 | TRUE                                              { True }
 | FALSE                                             { False }
 | name=IDENT                                        { Loc (Sym name) }
 | THIS                                              { Loc (Sym "this") }
-| obj=IDENT DOT attr=IDENT                          { Loc (Sym (obj ^ "dot" ^ attr)) }
+| obj=IDENT DOT attr_or_meth=IDENT args=option(args) 
+    {
+      match args with
+        None   -> Loc (Sym (obj ^ "." ^ attr_or_meth))
+      | Some l -> Call (Sym obj, Sym attr_or_meth, l)
+    }
 
 | lhs=expr     PLUS   rhs=expr                      { Add (lhs, rhs) }
 | lhs=expr    TIMES    rhs=expr                     { Mul (lhs, rhs) }
@@ -196,9 +200,6 @@ expr:
 | lhs=expr      OR     rhs=expr                     { Dis (lhs, rhs) }
 | NOT e=expr                                        { Not e }
 
-| NEW name=IDENT LPAR args=args RPAR                { Inst (Sym name, args) }
-| NEW name=IDENT LPAR RPAR                          { Inst (Sym name, []) }
-| caller=IDENT DOT callee=IDENT LPAR args=args RPAR { Call (Sym caller, Sym callee, args) }
-| caller=IDENT DOT callee=IDENT LPAR RPAR           { Call (Sym caller, Sym callee, []) }
+| NEW name=IDENT args=args                { Inst (Sym name, args) }
 ;
 

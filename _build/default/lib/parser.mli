@@ -37,7 +37,6 @@ type token =
   | DOT
   | DIVIDES
   | COMMA
-  | CLS of (string)
   | CLASS
   | BOOL
   | BEGIN

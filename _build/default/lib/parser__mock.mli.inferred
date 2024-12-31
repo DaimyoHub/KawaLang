@@ -34,7 +34,6 @@ type token =
   | DOT
   | DIVIDES
   | COMMA
-  | CLS of string
   | CLASS
   | BOOL
   | BEGIN
@@ -43,9 +42,14 @@ type token =
 val menhir_begin_marker : int
 val xv_var_decl : Environment.loc
 val xv_typ : Type.typ
+val xv_separated_nonempty_list_COMMA_expr_ : Abstract_syntax.expr list
+val xv_separated_list_COMMA_expr_ : Abstract_syntax.expr list
 val xv_program : Context.prog_ctx
 val xv_param_def : Environment.loc list
+val xv_option_args_ : Abstract_syntax.expr list option
 val xv_method_def : Context.method_def
+val xv_loption_separated_nonempty_list_COMMA_expr__ :
+  Abstract_syntax.expr list
 val xv_list_var_decl_ : Environment.loc list
 val xv_list_method_def_ : Context.method_def list
 val xv_list_instr_ : Abstract_syntax.instr list

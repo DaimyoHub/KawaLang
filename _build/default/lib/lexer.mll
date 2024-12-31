@@ -13,7 +13,7 @@
           "main",      MAIN;
           "class",     CLASS;
           "var",       VAR;
-          "attribute", ATTR;
+          "attr",      ATTR;
           "int",       INT;
           "bool",      BOOL;
           "void",      VOID;
@@ -25,7 +25,7 @@
           "else",      ELSE;
           "while",     WHILE;
           "return",    RETURN;
-          "method",    METHOD
+          "method",    METHOD;
         ];
       fun s ->
         try  Hashtbl.find h s
