@@ -1,0 +1,12 @@
+var int test;
+var bool p;
+var cls c;
+
+class cls {}
+
+main {
+  test + p;
+  test + c;
+  hola;
+}
+

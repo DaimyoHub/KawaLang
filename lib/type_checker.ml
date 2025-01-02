@@ -28,7 +28,6 @@ let type_mem_loc ctx env sym =
 let rec type_expr ctx env expr =
   let tml = type_mem_loc ctx env
   and tbo = type_bin_op ctx env
-  and texpr = type_expr ctx env
   in
   match expr with
       Cst _        -> Ok Int
@@ -41,16 +40,36 @@ let rec type_expr ctx env expr =
     | Mod (e1, e2)
     | Min (e1, e2)
     | Div (e1, e2) -> tbo Int Int e1 e2
-    | Neg a -> texpr a
-    | Eq (e1, e2)
+    | Neg a -> (
+        match check ctx env a Int with
+          Ok t -> Ok t
+        | Error rep -> report (Some Int) rep.obtained (Expr_ill_typed a)
+      )
+    | Eq (e1, e2)  -> (
+        match type_expr ctx env e1 with
+          Ok t -> (
+            match check ctx env e2 t with
+              Ok _ -> Ok t
+            | Error rep -> (
+                match rep.kind with
+                  Sym_res_err _ -> propagate rep
+                | _ -> report (Some t) rep.obtained (Rhs_ill_typed e2)
+              )          )
+        | Error rep -> propagate rep
+      )
     | Neq (e1, e2)
     | Geq (e1, e2)
     | Lne (e1, e2)
     | Gne (e1, e2)
     | Leq (e1, e2) -> tbo Int Bool e1 e2
-    | Con (e1, e2)
+    | Con (e1, e2) -> tbo Bool Bool e1 e2
     | Dis (e1, e2) -> tbo Bool Bool e1 e2
-    | Not a        -> texpr a
+    | Not a        -> (
+        match check ctx env a Bool with
+          Ok t -> Ok t
+        | Error rep -> report (Some Bool) rep.obtained (Expr_ill_typed a)
+      )
+
     | Inst (class_symbol, args) -> (
         match get_class_from_symbol ctx class_symbol with
           Ok cls -> (
@@ -114,9 +133,31 @@ and check_method ctx class_def method_def =
     res
   in
 
+  let map_params params =
+    let res = Env.create () in
+    List.iter (fun (k, v) ->
+      match v.typ with
+        Cls cls_sym -> (
+          match ClsDefTable.get ctx.classes cls_sym with
+            Some cls -> 
+              Hashtbl.iter (fun a b ->
+                let nsym = 
+                  let Sym attr_name = a and Sym obj_name = k in
+                  Sym (obj_name ^ "." ^ attr_name)
+                in
+                Env.add res nsym { sym = nsym; typ = b.typ; data = No_data }
+              ) (Env.raw cls.attrs)
+          | None -> let _ =
+              report None (Some v.typ) (Class_type_not_exist cls_sym) in ()
+        )
+      | _ -> Env.add res k v
+    ) params;
+    res
+  in
+
   let envs = [
     map_env method_def.locals;
-    map_env method_def.params;
+    map_params method_def.params;
     mapped_attrs
   ] in
   match Env.merge envs with
@@ -170,11 +211,17 @@ and type_bin_op ctx env exp res e1 e2 =
     Ok _ -> (
       match chk e2 exp with
         Ok _ -> Ok res
-      | Error rep ->
-          report (Some exp) rep.obtained (Rhs_ill_typed e2)
+      | Error rep -> (
+          match rep.kind with
+            Sym_res_err _ -> propagate rep
+          | _ -> report (Some exp) rep.obtained (Rhs_ill_typed e2)
+        )
     )
-  | Error rep ->
-      report (Some exp) rep.obtained (Lhs_ill_typed e1)
+  | Error rep -> (
+      match rep.kind with
+        Sym_res_err _ -> propagate rep
+      | _ -> report (Some exp) rep.obtained (Lhs_ill_typed e1)
+    )
 
 
 (*
@@ -185,9 +232,9 @@ and type_bin_op ctx env exp res e1 e2 =
  *)
 and type_call ctx env sym ret_typ args params =
   let param_ts = 
-    Hashtbl.fold (
-      fun _ v acc -> v.typ :: acc
-    ) (Env.raw params) []
+    List.fold_left (
+      fun acc (_, v) -> v.typ :: acc
+    ) [] params
   in
   let rec aux args param_ts =
     match args, param_ts with
@@ -235,8 +282,14 @@ and check_instr ctx env exp instr =
       | Ok t -> (
           match chk e t with
             Ok _ -> Ok Void
-          | Error rep ->
-              report (Some t) rep.obtained (Set_ill_typed (sym, e))
+          | Error rep -> (
+              match rep.kind with
+                Expected_args _
+              | Unexpected_args _
+              | Arg_ill_typed (_, _) ->
+                  report None None (Set_ill_typed_without_info sym)
+              | _ -> report (Some t) rep.obtained (Set_ill_typed (sym, e))
+            )
         )
       | Error rep -> propagate rep
     ) 
@@ -325,11 +378,11 @@ and check_seq ctx env exp seq =
       match check_instr ctx env exp (If (c, s1, s2)) with
         Ok Void -> check_seq ctx env exp s
       | Ok _ -> check_seq ctx env Void s
-      | Error rep -> propagate rep
+      | Error rep -> let _ = check_seq ctx env exp s in propagate rep
     )
   | instr :: s -> (
       match check_instr ctx env Void instr with
         Ok _ -> check_seq ctx env exp s
-      | Error rep -> propagate rep
+      | Error rep -> let _ = check_seq ctx env exp s in propagate rep
     )
 

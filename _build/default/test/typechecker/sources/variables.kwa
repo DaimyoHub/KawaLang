@@ -1,0 +1,13 @@
+var int test;
+var bool p;
+
+main {
+  !test;
+  p - test;
+  test;
+  test || pa;
+  pa || test;
+  p || pa;
+  pa || p;
+}
+

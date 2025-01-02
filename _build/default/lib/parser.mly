@@ -72,7 +72,7 @@ program:
             Env.add acc x.sym x;
             acc
         ) (Env.create ()) glb;
-      main
+      main = List.rev main
     }}
 ;
 
@@ -89,9 +89,9 @@ attr_decl:
 
 param_def:
 | t=typ name=IDENT COMMA others=param_def
-    { { sym = Sym name; typ = t; data = No_data } :: others }
+    { (Sym name, { sym = Sym name; typ = t; data = No_data }) :: others }
 | t=typ name=IDENT
-    { [{ sym = Sym name; typ = t; data = No_data }] }
+    { [Sym name, { sym = Sym name; typ = t; data = No_data }] }
 ;
 
 method_def:
@@ -99,32 +99,27 @@ method_def:
     {{
       sym = Sym name;
       ret_typ = t;
-      params = 
-        List.fold_left (
-          fun acc x ->
-            Env.add acc x.sym x;
-            acc
-        ) (Env.create ()) params;
+      params = List.rev params;
       locals = 
         List.fold_left (
           fun acc x ->
             Env.add acc x.sym x;
             acc
         ) (Env.create ()) locals;
-      code = code
+      code = List.rev code
     }}
 | METHOD t=typ name=IDENT LPAR RPAR BEGIN locals=list(var_decl) code=list(instr) END
     {{
       sym = Sym name;
       ret_typ = t;
-      params = Env.create ();
+      params = [];
       locals = 
         List.fold_left (
           fun acc x ->
             Env.add acc x.sym x;
             acc
         ) (Env.create ()) locals;
-      code = code
+      code = List.rev code
     }}
 
 ;
@@ -158,7 +153,7 @@ instr:
 | obj=IDENT DOT attr=IDENT SET e=expr SEMI
     { Set (Sym (obj ^ "." ^ attr), e) }
 | IF LPAR cond=expr RPAR BEGIN is1=list(instr) END ELSE BEGIN is2=list(instr) END
-    { If (cond, is1, is2) }
+    { If (cond, List.rev is1, List.rev is2) }
 | WHILE LPAR cond=expr RPAR BEGIN seq=list(instr) END
     { While (cond, seq) }
 | RETURN e=expr SEMI

@@ -365,7 +365,7 @@ and ('s, 'r) _menhir_cell1_method_def =
   | MenhirCell1_method_def of 's * ('s, 'r) _menhir_state * (Context.method_def)
 
 and ('s, 'r) _menhir_cell1_param_def = 
-  | MenhirCell1_param_def of 's * ('s, 'r) _menhir_state * (Environment.loc list)
+  | MenhirCell1_param_def of 's * ('s, 'r) _menhir_state * ((Symbol.symbol * Environment.loc) list)
 
 and ('s, 'r) _menhir_cell1_typ = 
   | MenhirCell1_typ of 's * ('s, 'r) _menhir_state * (Type.typ)
@@ -443,7 +443,7 @@ let _menhir_action_01 =
 # 444 "lib/parser.ml"
      in
     (
-# 171 "lib/parser.mly"
+# 166 "lib/parser.mly"
                                            ( al )
 # 449 "lib/parser.ml"
      : (Abstract_syntax.expr list))
@@ -459,7 +459,7 @@ let _menhir_action_02 =
 let _menhir_action_03 =
   fun attrs meths name ->
     (
-# 134 "lib/parser.mly"
+# 129 "lib/parser.mly"
     ({
       sym   = Sym name;
       attrs =
@@ -481,7 +481,7 @@ let _menhir_action_03 =
 let _menhir_action_04 =
   fun e ->
     (
-# 175 "lib/parser.mly"
+# 170 "lib/parser.mly"
                                                     ( e )
 # 487 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -489,7 +489,7 @@ let _menhir_action_04 =
 let _menhir_action_05 =
   fun n ->
     (
-# 176 "lib/parser.mly"
+# 171 "lib/parser.mly"
                                                     ( Cst (n) )
 # 495 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -497,7 +497,7 @@ let _menhir_action_05 =
 let _menhir_action_06 =
   fun () ->
     (
-# 177 "lib/parser.mly"
+# 172 "lib/parser.mly"
                                                     ( True )
 # 503 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -505,7 +505,7 @@ let _menhir_action_06 =
 let _menhir_action_07 =
   fun () ->
     (
-# 178 "lib/parser.mly"
+# 173 "lib/parser.mly"
                                                     ( False )
 # 511 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -513,7 +513,7 @@ let _menhir_action_07 =
 let _menhir_action_08 =
   fun name ->
     (
-# 179 "lib/parser.mly"
+# 174 "lib/parser.mly"
                                                     ( Loc (Sym name) )
 # 519 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -521,7 +521,7 @@ let _menhir_action_08 =
 let _menhir_action_09 =
   fun () ->
     (
-# 180 "lib/parser.mly"
+# 175 "lib/parser.mly"
                                                     ( Loc (Sym "this") )
 # 527 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -529,7 +529,7 @@ let _menhir_action_09 =
 let _menhir_action_10 =
   fun args attr_or_meth ->
     (
-# 182 "lib/parser.mly"
+# 177 "lib/parser.mly"
     (
       match args with
         None   -> Loc (Sym ("this." ^ attr_or_meth))
@@ -541,7 +541,7 @@ let _menhir_action_10 =
 let _menhir_action_11 =
   fun args attr_or_meth obj ->
     (
-# 188 "lib/parser.mly"
+# 183 "lib/parser.mly"
     (
       match args with
         None   -> Loc (Sym (obj ^ "." ^ attr_or_meth))
@@ -553,7 +553,7 @@ let _menhir_action_11 =
 let _menhir_action_12 =
   fun lhs rhs ->
     (
-# 194 "lib/parser.mly"
+# 189 "lib/parser.mly"
                                                     ( Add (lhs, rhs) )
 # 559 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -561,7 +561,7 @@ let _menhir_action_12 =
 let _menhir_action_13 =
   fun lhs rhs ->
     (
-# 195 "lib/parser.mly"
+# 190 "lib/parser.mly"
                                                     ( Mul (lhs, rhs) )
 # 567 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -569,7 +569,7 @@ let _menhir_action_13 =
 let _menhir_action_14 =
   fun lhs rhs ->
     (
-# 196 "lib/parser.mly"
+# 191 "lib/parser.mly"
                                                     ( Div (lhs, rhs) )
 # 575 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -577,7 +577,7 @@ let _menhir_action_14 =
 let _menhir_action_15 =
   fun lhs rhs ->
     (
-# 197 "lib/parser.mly"
+# 192 "lib/parser.mly"
                                                     ( Mod (lhs, rhs) )
 # 583 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -585,7 +585,7 @@ let _menhir_action_15 =
 let _menhir_action_16 =
   fun lhs rhs ->
     (
-# 198 "lib/parser.mly"
+# 193 "lib/parser.mly"
                                                     ( Min (lhs, rhs) )
 # 591 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -593,7 +593,7 @@ let _menhir_action_16 =
 let _menhir_action_17 =
   fun e ->
     (
-# 199 "lib/parser.mly"
+# 194 "lib/parser.mly"
                                                     ( Neg e )
 # 599 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -601,7 +601,7 @@ let _menhir_action_17 =
 let _menhir_action_18 =
   fun lhs rhs ->
     (
-# 201 "lib/parser.mly"
+# 196 "lib/parser.mly"
                                                     ( Eq  (lhs, rhs) )
 # 607 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -609,7 +609,7 @@ let _menhir_action_18 =
 let _menhir_action_19 =
   fun lhs rhs ->
     (
-# 202 "lib/parser.mly"
+# 197 "lib/parser.mly"
                                                     ( Neq (lhs, rhs) )
 # 615 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -617,7 +617,7 @@ let _menhir_action_19 =
 let _menhir_action_20 =
   fun lhs rhs ->
     (
-# 203 "lib/parser.mly"
+# 198 "lib/parser.mly"
                                                     ( Lne (lhs, rhs) )
 # 623 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -625,7 +625,7 @@ let _menhir_action_20 =
 let _menhir_action_21 =
   fun lhs rhs ->
     (
-# 204 "lib/parser.mly"
+# 199 "lib/parser.mly"
                                                     ( Leq (lhs, rhs) )
 # 631 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -633,7 +633,7 @@ let _menhir_action_21 =
 let _menhir_action_22 =
   fun lhs rhs ->
     (
-# 205 "lib/parser.mly"
+# 200 "lib/parser.mly"
                                                     ( Gne (lhs, rhs) )
 # 639 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -641,7 +641,7 @@ let _menhir_action_22 =
 let _menhir_action_23 =
   fun lhs rhs ->
     (
-# 206 "lib/parser.mly"
+# 201 "lib/parser.mly"
                                                     ( Geq (lhs, rhs) )
 # 647 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -649,7 +649,7 @@ let _menhir_action_23 =
 let _menhir_action_24 =
   fun lhs rhs ->
     (
-# 208 "lib/parser.mly"
+# 203 "lib/parser.mly"
                                                     ( Con (lhs, rhs) )
 # 655 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -657,7 +657,7 @@ let _menhir_action_24 =
 let _menhir_action_25 =
   fun lhs rhs ->
     (
-# 209 "lib/parser.mly"
+# 204 "lib/parser.mly"
                                                     ( Dis (lhs, rhs) )
 # 663 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -665,7 +665,7 @@ let _menhir_action_25 =
 let _menhir_action_26 =
   fun e ->
     (
-# 210 "lib/parser.mly"
+# 205 "lib/parser.mly"
                                                     ( Not e )
 # 671 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -673,7 +673,7 @@ let _menhir_action_26 =
 let _menhir_action_27 =
   fun args name ->
     (
-# 212 "lib/parser.mly"
+# 207 "lib/parser.mly"
                                           ( Inst (Sym name, args) )
 # 679 "lib/parser.ml"
      : (Abstract_syntax.expr))
@@ -681,7 +681,7 @@ let _menhir_action_27 =
 let _menhir_action_28 =
   fun e ->
     (
-# 153 "lib/parser.mly"
+# 148 "lib/parser.mly"
     ( Print(e) )
 # 687 "lib/parser.ml"
      : (Abstract_syntax.instr))
@@ -689,7 +689,7 @@ let _menhir_action_28 =
 let _menhir_action_29 =
   fun e name ->
     (
-# 155 "lib/parser.mly"
+# 150 "lib/parser.mly"
     ( Set (Sym name, e) )
 # 695 "lib/parser.ml"
      : (Abstract_syntax.instr))
@@ -697,7 +697,7 @@ let _menhir_action_29 =
 let _menhir_action_30 =
   fun attr e ->
     (
-# 157 "lib/parser.mly"
+# 152 "lib/parser.mly"
     ( Set (Sym ("this." ^ attr), e) )
 # 703 "lib/parser.ml"
      : (Abstract_syntax.instr))
@@ -705,7 +705,7 @@ let _menhir_action_30 =
 let _menhir_action_31 =
   fun attr e obj ->
     (
-# 159 "lib/parser.mly"
+# 154 "lib/parser.mly"
     ( Set (Sym (obj ^ "." ^ attr), e) )
 # 711 "lib/parser.ml"
      : (Abstract_syntax.instr))
@@ -713,15 +713,15 @@ let _menhir_action_31 =
 let _menhir_action_32 =
   fun cond is1 is2 ->
     (
-# 161 "lib/parser.mly"
-    ( If (cond, is1, is2) )
+# 156 "lib/parser.mly"
+    ( If (cond, List.rev is1, List.rev is2) )
 # 719 "lib/parser.ml"
      : (Abstract_syntax.instr))
 
 let _menhir_action_33 =
   fun cond seq ->
     (
-# 163 "lib/parser.mly"
+# 158 "lib/parser.mly"
     ( While (cond, seq) )
 # 727 "lib/parser.ml"
      : (Abstract_syntax.instr))
@@ -729,7 +729,7 @@ let _menhir_action_33 =
 let _menhir_action_34 =
   fun e ->
     (
-# 165 "lib/parser.mly"
+# 160 "lib/parser.mly"
     ( Ret e )
 # 735 "lib/parser.ml"
      : (Abstract_syntax.instr))
@@ -737,7 +737,7 @@ let _menhir_action_34 =
 let _menhir_action_35 =
   fun e ->
     (
-# 167 "lib/parser.mly"
+# 162 "lib/parser.mly"
     ( Ignore e )
 # 743 "lib/parser.ml"
      : (Abstract_syntax.instr))
@@ -845,40 +845,35 @@ let _menhir_action_48 =
     ({
       sym = Sym name;
       ret_typ = t;
-      params = 
-        List.fold_left (
-          fun acc x ->
-            Env.add acc x.sym x;
-            acc
-        ) (Env.create ()) params;
+      params = List.rev params;
       locals = 
         List.fold_left (
           fun acc x ->
             Env.add acc x.sym x;
             acc
         ) (Env.create ()) locals;
-      code = code
+      code = List.rev code
     })
-# 863 "lib/parser.ml"
+# 858 "lib/parser.ml"
      : (Context.method_def))
 
 let _menhir_action_49 =
   fun code locals name t ->
     (
-# 117 "lib/parser.mly"
+# 112 "lib/parser.mly"
     ({
       sym = Sym name;
       ret_typ = t;
-      params = Env.create ();
+      params = [];
       locals = 
         List.fold_left (
           fun acc x ->
             Env.add acc x.sym x;
             acc
         ) (Env.create ()) locals;
-      code = code
+      code = List.rev code
     })
-# 882 "lib/parser.ml"
+# 877 "lib/parser.ml"
      : (Context.method_def))
 
 let _menhir_action_50 =
@@ -886,7 +881,7 @@ let _menhir_action_50 =
     (
 # 111 "<standard.mly>"
     ( None )
-# 890 "lib/parser.ml"
+# 885 "lib/parser.ml"
      : (Abstract_syntax.expr list option))
 
 let _menhir_action_51 =
@@ -894,24 +889,24 @@ let _menhir_action_51 =
     (
 # 114 "<standard.mly>"
     ( Some x )
-# 898 "lib/parser.ml"
+# 893 "lib/parser.ml"
      : (Abstract_syntax.expr list option))
 
 let _menhir_action_52 =
   fun name others t ->
     (
 # 92 "lib/parser.mly"
-    ( { sym = Sym name; typ = t; data = No_data } :: others )
-# 906 "lib/parser.ml"
-     : (Environment.loc list))
+    ( (Sym name, { sym = Sym name; typ = t; data = No_data }) :: others )
+# 901 "lib/parser.ml"
+     : ((Symbol.symbol * Environment.loc) list))
 
 let _menhir_action_53 =
   fun name t ->
     (
 # 94 "lib/parser.mly"
-    ( [{ sym = Sym name; typ = t; data = No_data }] )
-# 914 "lib/parser.ml"
-     : (Environment.loc list))
+    ( [Sym name, { sym = Sym name; typ = t; data = No_data }] )
+# 909 "lib/parser.ml"
+     : ((Symbol.symbol * Environment.loc) list))
 
 let _menhir_action_54 =
   fun cls glb main ->
@@ -930,9 +925,9 @@ let _menhir_action_54 =
             Env.add acc x.sym x;
             acc
         ) (Env.create ()) glb;
-      main
+      main = List.rev main
     })
-# 936 "lib/parser.ml"
+# 931 "lib/parser.ml"
      : (Context.prog_ctx))
 
 let _menhir_action_55 =
@@ -940,7 +935,7 @@ let _menhir_action_55 =
     (
 # 250 "<standard.mly>"
     ( [ x ] )
-# 944 "lib/parser.ml"
+# 939 "lib/parser.ml"
      : (Abstract_syntax.expr list))
 
 let _menhir_action_56 =
@@ -948,7 +943,7 @@ let _menhir_action_56 =
     (
 # 253 "<standard.mly>"
     ( x :: xs )
-# 952 "lib/parser.ml"
+# 947 "lib/parser.ml"
      : (Abstract_syntax.expr list))
 
 let _menhir_action_57 =
@@ -956,7 +951,7 @@ let _menhir_action_57 =
     (
 # 80 "lib/parser.mly"
              ( Int )
-# 960 "lib/parser.ml"
+# 955 "lib/parser.ml"
      : (Type.typ))
 
 let _menhir_action_58 =
@@ -964,7 +959,7 @@ let _menhir_action_58 =
     (
 # 81 "lib/parser.mly"
              ( Bool )
-# 968 "lib/parser.ml"
+# 963 "lib/parser.ml"
      : (Type.typ))
 
 let _menhir_action_59 =
@@ -972,7 +967,7 @@ let _menhir_action_59 =
     (
 # 82 "lib/parser.mly"
              ( Void )
-# 976 "lib/parser.ml"
+# 971 "lib/parser.ml"
      : (Type.typ))
 
 let _menhir_action_60 =
@@ -980,7 +975,7 @@ let _menhir_action_60 =
     (
 # 83 "lib/parser.mly"
              ( Cls (Sym name) )
-# 984 "lib/parser.ml"
+# 979 "lib/parser.ml"
      : (Type.typ))
 
 let _menhir_action_61 =
@@ -988,7 +983,7 @@ let _menhir_action_61 =
     (
 # 58 "lib/parser.mly"
                             ( { sym = Sym name; typ = t; data = No_data } )
-# 992 "lib/parser.ml"
+# 987 "lib/parser.ml"
      : (Environment.loc))
 
 let _menhir_print_token : token -> string =

@@ -87,3 +87,9 @@ let get_object_attributes ctx env sym =
     )
   | Error rep -> propagate rep
 
+
+let get_method_ret_typ cls meth_sym =
+  match get_method_from_class cls meth_sym with
+    Error rep -> propagate rep
+  | Ok meth -> Ok meth.ret_typ
+

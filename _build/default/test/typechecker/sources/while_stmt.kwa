@@ -1,0 +1,14 @@
+main {
+  while (test) {
+    
+  }
+
+  while (true) {
+    print(1);
+  }
+
+  while (true) {
+    return 5;
+  }
+}
+

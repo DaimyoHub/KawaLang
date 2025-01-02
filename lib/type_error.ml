@@ -36,6 +36,7 @@ type typ_err_kind =
   | Class_type_not_exist    of symbol
   | Return_bad_type
   | If_branch_ill_typed     of bool
+  | Set_ill_typed_without_info of symbol
 
 
 type typ_err_report = {
@@ -59,76 +60,79 @@ let pprint_symbol_resolv err =
   let fmt = Printf.sprintf in
   match err with
     Class_not_found (Sym s) ->
-      fmt "'%s' is not a class." s
+      fmt "Symbol '%s' does not correspond to a class.\n" s
   | Loc_not_found (Sym s) ->
-      fmt "'%s' is not a variable nor an attribute." s
+      fmt "Symbol '%s' does not correspond to any variable or attribute.\n" s
   | Class_without_ctor (Sym s) ->
-      fmt "Constructor of the class '%s' is not defined." s
+      fmt "Constructor of the class '%s' is not defined.\n" s
   | Method_not_in_class (Sym c, Sym m) ->
-      fmt "Method '%s' is not defined in class '%s'." m c
+      fmt "Method '%s' is not defined in class '%s'.\n" m c
   | Not_loc _ ->
-      fmt "'Expression does not correspond to variable nor attribute'"
+      fmt "Expression does not correspond to variable nor attribute\n"
   | Diff_locs_same_sym ->
-      fmt "Different locals have the same symbol."
+      fmt "Different locals have the same symbol.\n"
 
 let pprint rep =
   let fmt = Printf.sprintf in
   match rep.kind with
     Sym_res_err err -> pprint_symbol_resolv err
   | Lhs_ill_typed _ ->
-      fmt "LHS has type %s. Expected type %s instead." (ttos rep.obtained)
+      fmt "LHS has type %s. Expected type %s instead.\n" (ttos rep.obtained)
         (ttos rep.expected)
   | Rhs_ill_typed _ ->
-      fmt "RHS has type %s. Expected type %s instead." (ttos rep.obtained)
+      fmt "RHS has type %s. Expected type %s instead.\n" (ttos rep.obtained)
         (ttos rep.expected)
   | Expr_ill_typed _ ->
-      "Expression is ill typed."
+      fmt "Expression has type %s. Expected an expression of type %s.\n" 
+        (ttos rep.obtained) (ttos rep.expected)
   | Cond_not_bool _ ->
-      "Condition expression is not a predicate."
+      "Condition expression is not a predicate.\n"
   | Void_method_return ->
-      "Method typed as void should not return."
+      "Method typed as void should not return.\n"
   | Typed_method_not_return ->
-      "Typed method should return."
+      "Typed method should return.\n"
   | Set_ill_typed (Sym s, _) ->
-      fmt "Cannot set variable '%s' typed as %s with a value of type %s." s
+      fmt "Cannot set variable '%s' typed as %s with a value of type %s.\n" s
         (ttos rep.expected) (ttos rep.obtained)
   | Print_not_int _ ->
-      "Argument of print is not of type int."
+      "Argument of print is not of type int.\n"
   | Unexpected_args (Sym s) ->
-      fmt "Calling %s method with too much arguments." s
+      fmt "Calling '%s' method with too much arguments.\n" s
   | Expected_args (Sym s) ->
-      fmt "Missing arguments to call %s method." s
+      fmt "Missing arguments to call '%s' method.\n" s
   | Arg_ill_typed (Sym s, _) ->
-      fmt "Argument type (%s) does not correspond to parameter type (%s)
-           of %s method." (ttos rep.obtained) (ttos rep.expected) s
+      fmt "Argument type (%s) does not correspond to parameter type (%s) of %s method.\n"
+        (ttos rep.obtained) (ttos rep.expected) s
   | Loc_type_not_user_def (Sym s) ->
-      fmt "Variable %s is not an object." s
+      fmt "Variable %s is not an object.\n" s
   | Unexpected_type _ ->
-      "Unexpected type."
+      "Unexpected type : "
   | Expected_void_instr _ ->
-      "Expected void instruction."
+      "Expected void instruction.\n"
   | Ill_typed _ ->
-      "Instruction is ill typed."
+      "Instruction is ill typed.\n"
   | Branches_not_return_same ->
-      "Both branches of an if statement must be samely typed."
+      "Both branches of an if statement must be given the same type.\n"
   | Not_obj_inst (Sym loc_sym, Sym cls_sym) ->
-      fmt "Cannot instanciate class '%s' with the variable '%s' not typed as '%s'."
+      fmt "Cannot instanciate class '%s' with the variable '%s' not typed as '%s'.\n"
         cls_sym loc_sym cls_sym
   | Already_returned ->
-      fmt "Found multiple sequential return statements for a same method."
+      fmt "Found multiple sequential return statements for a same method.\n"
   | Method_ill_typed (Sym sym) ->
-      fmt "Method '%s' is ill typed." sym
+      fmt "Method '%s' is ill typed.\n" sym
   | Dead_code ->
-      fmt "Found dead code."
+      fmt "Found dead code.\n"
   | Class_type_not_exist (Sym name) ->
-      fmt "Class type '%s' does not exist. Class '%s' has not been defined." name
+      fmt "Class type '%s' does not exist. Class '%s' has not been defined.\n" name
         name
   | Return_bad_type ->
-      fmt "Returning value of type %s but expected a value of type %s."
+      fmt "Returning value of type %s but expected a value of type %s.\n"
         (ttos rep.obtained) (ttos rep.expected)
   | If_branch_ill_typed b ->
-      fmt "Conditional statement %s branch is ill typed."
+      fmt "Conditional statement %s branch is ill typed.\n"
         (if b then "first" else "second")
+  | Set_ill_typed_without_info (Sym name) ->
+      fmt "Unable to set variable '%s' : RHS operand is ill typed.\n" name
 
 let report exp obt kind =
   let rep = {
@@ -136,7 +140,7 @@ let report exp obt kind =
     obtained = obt;
     kind = kind
   } in
-  print_endline (pprint rep);
+  print_string (pprint rep);
   Error rep
 
 let propagate rep = Error rep

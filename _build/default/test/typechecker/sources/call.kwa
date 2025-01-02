@@ -1,0 +1,17 @@
+var cls c;
+var int res;
+
+class cls {
+  method int test(cls other, int i) {
+    return 5;
+  }
+}
+
+main {
+  /*res = c.test(5, c);
+  
+  res = c.test(c);*/
+
+  res = c.test(c);
+}
+
