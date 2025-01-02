@@ -10,18 +10,14 @@ class point {
     this.y = 0;
   }
 
-  method point reduce(point p) {
-    var int diff;
-    var int sum;
+  method int reduce(point p) {
+    var int test;
 
-    sum = this.sum();
-
-    if (sum > 10) {
-      diff = sum - 10;
-      this.x = this.x - diff;
-      return this;
+    if (true) {
+      test = 0;
+      return 5;
     } else {
-      return this;
+      test = 0;
     }
   }
 

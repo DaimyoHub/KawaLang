@@ -240,26 +240,7 @@ and check_instr ctx env exp instr =
         )
       | Error rep -> propagate rep
     ) 
-  (*
-   * In this impementation of Kawa, I force both branches of an if statement to be
-   * given the same type by the algorithm. It simplifies the analysis of the returning
-   * constraints of a given method.
-   *)
-  | If (cond, is1, is2) -> (
-      match chk cond Bool with
-        Ok _ -> (
-          match chs exp is1 with
-            Ok t -> (
-              match chs t is2 with
-                Ok _ -> Ok t
-              | Error rep -> 
-                  report (Some t) rep.obtained (Branches_not_return_same)
-            )
-          | Error rep -> propagate rep
-        )
-      | Error rep ->
-          report (Some Bool) rep.obtained (Cond_not_bool cond)
-    )
+  | If (_, _, _) -> check_if_statement ctx env exp instr
   | While (cond, is) -> (
       match chk cond Bool with
         Ok _ -> chs exp is
@@ -274,6 +255,49 @@ and check_instr ctx env exp instr =
     )
 
 
+and check_if_statement ctx env exp instr =
+  let rec check_branch flag seq exp =
+    match seq with
+      [] -> Ok Void
+    | [Ret e] -> (
+        match check ctx env e exp with
+          Ok _ -> Ok exp
+        | Error rep -> report (Some exp) rep.obtained Return_bad_type
+      )
+    | Ret e :: s ->
+        let _ = check_branch flag s exp and _ = report None None Dead_code in (
+          match check ctx env e exp with
+            Ok _ -> Ok exp
+          | Error rep -> report (Some exp) rep.obtained Return_bad_type
+        )
+    | instr :: s -> (
+        match check_instr ctx env exp instr with
+          Ok Void -> check_branch flag s exp
+        | Ok _ -> failwith "Unreachable : check_if_statement.check_branch"
+        | Error rep ->
+            let _ = report (Some Void) rep.obtained (If_branch_ill_typed flag) in
+            check_branch flag s exp
+      )
+  in
+  match instr with
+    If (cond, seq1, seq2) -> (
+      match check ctx env cond Bool with
+        Ok _ -> (
+          match check_branch true seq1 exp with
+            Ok t -> (
+              match check_branch false seq2 t with
+                Ok u -> 
+                  if t = u then Ok t
+                  else report (Some t) (Some u) Branches_not_return_same
+              | Error rep -> report (Some t) rep.obtained Branches_not_return_same
+            )
+          | Error rep -> propagate rep
+        )
+      | Error rep -> report (Some Bool) rep.obtained (Cond_not_bool cond)
+    )
+  | _ -> failwith "Unreachable : check_if_statement of an instruction which is not an if statement"
+
+
 (*
  * check_seq context env expected_type instr_list
  * 
@@ -281,46 +305,31 @@ and check_instr ctx env exp instr =
  * should return a result or not.
  *)
 and check_seq ctx env exp seq =
-  let rec aux has_already_returned expected seq =
-    match seq with
-      [] ->
-        if exp <> Void && has_already_returned = false then
-          report None None Typed_method_not_return
-        else Ok Void
-    | Ret e :: s ->
-        if has_already_returned then
-          let _ = aux true Void s in
-          report None None Already_returned
-        else
-          if exp = Void then
-            (* we keep type checking as if no return statement has been found *)
-            let _ = aux false Void s in 
-            report None None Void_method_return
-          else (
-            match check ctx env e exp with
-              Ok tr -> (
-                match aux true Void s with
-                  Ok _ -> Ok tr
-                | Error rep -> propagate rep
-              )
-            | Error rep -> report (Some exp) (rep.obtained) (Return_bad_type)
-          )
-    | instr :: s -> (
-        (if has_already_returned then 
-            let _ = report None None Dead_code in ());
-
-        match instr with
-          If (_, _, _) -> (
-            match check_instr ctx env exp instr with
-              Ok Void -> aux false expected s
-            | Ok t -> 
-                if t = expected then aux true exp s
-                else aux false exp s
-            | Error rep -> propagate rep
-          )
-        | _ ->
-            let _ = check_instr ctx env Void instr in
-            aux false exp s)
-  in
-  aux false exp seq
+  match seq with
+    [] ->
+      if exp = Void then Ok Void
+      else report None None Typed_method_not_return
+  | [Ret e] ->
+      if exp <> Void then (
+        match check ctx env e exp with
+          Ok t -> Ok t
+        | Error rep -> propagate rep
+      ) else report (Some Void) None Void_method_return
+  | Ret e :: s ->
+      let _ = check_seq ctx env exp s and _ = report None None Dead_code in (
+        match check ctx env e exp with
+          Ok _ -> Ok exp
+        | Error rep -> report (Some exp) rep.obtained Return_bad_type
+      )
+  | If (c, s1, s2) :: s -> (
+      match check_instr ctx env exp (If (c, s1, s2)) with
+        Ok Void -> check_seq ctx env exp s
+      | Ok _ -> check_seq ctx env Void s
+      | Error rep -> propagate rep
+    )
+  | instr :: s -> (
+      match check_instr ctx env Void instr with
+        Ok _ -> check_seq ctx env exp s
+      | Error rep -> propagate rep
+    )
 

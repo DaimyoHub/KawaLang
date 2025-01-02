@@ -35,6 +35,7 @@ type typ_err_kind =
   | Dead_code
   | Class_type_not_exist    of symbol
   | Return_bad_type
+  | If_branch_ill_typed     of bool
 
 
 type typ_err_report = {
@@ -114,7 +115,7 @@ let pprint rep =
       fmt "Cannot instanciate class '%s' with the variable '%s' not typed as '%s'."
         cls_sym loc_sym cls_sym
   | Already_returned ->
-      fmt "A bloc of instructions cannot contain more than one return statements."
+      fmt "Found multiple sequential return statements for a same method."
   | Method_ill_typed (Sym sym) ->
       fmt "Method '%s' is ill typed." sym
   | Dead_code ->
@@ -125,6 +126,9 @@ let pprint rep =
   | Return_bad_type ->
       fmt "Returning value of type %s but expected a value of type %s."
         (ttos rep.obtained) (ttos rep.expected)
+  | If_branch_ill_typed b ->
+      fmt "Conditional statement %s branch is ill typed."
+        (if b then "first" else "second")
 
 let report exp obt kind =
   let rep = {

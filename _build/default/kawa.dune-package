@@ -65,7 +65,7 @@
    lang/type_error.ml
    opam))
  (libexec (lang/lang.cmxs))
- (bin (kawa.interpreter))
+ (bin (kawa.interpreter kawa.test.typechecker))
  (doc (README.md)))
 (library
  (name kawa.lang)

@@ -65,6 +65,7 @@ libexec: [
 ]
 bin: [
   "_build/install/default/bin/kawa.interpreter"
+  "_build/install/default/bin/kawa.test.typechecker"
 ]
 doc: [
   "_build/install/default/doc/kawa/README.md"
