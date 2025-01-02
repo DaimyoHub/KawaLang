@@ -15,6 +15,7 @@ let _ =
       Parser.program Lexer.token lexbuf 
     with Parser.Error -> failwith (get_position lexbuf)
   in
-  match Type_checker.check_seq prog (Environment.Env.create ()) Type.Void prog.main with
+  match Type_checker.check_class prog (Sym "point") with
     Ok _ -> print_endline "yay"
   | Error _ -> print_endline "nop"
+

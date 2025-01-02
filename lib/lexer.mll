@@ -72,9 +72,11 @@ rule token = parse
   | '/'                  { DIVIDES }
   | '%'                  { MODULO }
   | "=="                 { EQUALS }
-  | "!="                 { NEQUALS }
+  | "!="                 { NOT_EQUALS }
   | '<'                  { LESS }
   | "<="                 { LESS_EQUALS }
+  | ">"                  { GREATER }
+  | ">="                 { GREATER_EQUALS }
   | "&&"                 { AND }
   | "||"                 { OR }
 

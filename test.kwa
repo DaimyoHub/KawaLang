@@ -1,25 +1,44 @@
-var int test;
+var bool test;
 var point p;
 
 class point {
   attr int x;
   attr int y;
 
-  method void point(int x, int y) {
-    this.x = x;
-    this.y = y;
+  method void point(int a, int b) {
+    this.x = 0;
+    this.y = 0;
+  }
+
+  method point reduce(point p) {
+    var int diff;
+    var int sum;
+
+    sum = this.sum();
+
+    if (sum > 10) {
+      diff = sum - 10;
+      this.x = this.x - diff;
+      return this;
+    } else {
+      return this;
+    }
+  }
+
+  method int sum() {
+    return this.x + this.y;
   }
 }
 
 main {
-  p = new point(1, 2);
+  p = new point(true, 2);
 
-  if (test <= 8 + 7 * 6 % 4 - 3) {
-    while (4 + 8) {
-      prin(test);
+  if (test) {
+    while (4 + 8 < 9) {
+      print(1);
     }
   } else {
-    print(test.x);
+    print(2);
   }
 }
 

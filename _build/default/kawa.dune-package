@@ -8,6 +8,7 @@
    dune-package
    lang/abstract_syntax.ml
    lang/context.ml
+   lang/debug.ml
    lang/environment.ml
    lang/interpreter.ml
    lang/lang.a
@@ -23,6 +24,9 @@
    lang/lang__Context.cmi
    lang/lang__Context.cmt
    lang/lang__Context.cmx
+   lang/lang__Debug.cmi
+   lang/lang__Debug.cmt
+   lang/lang__Debug.cmx
    lang/lang__Environment.cmi
    lang/lang__Environment.cmt
    lang/lang__Environment.cmx
@@ -89,6 +93,10 @@
       (obj_name lang__Context)
       (visibility public)
       (source (path Context) (impl (path lang/context.ml))))
+     (module
+      (obj_name lang__Debug)
+      (visibility public)
+      (source (path Debug) (impl (path lang/debug.ml))))
      (module
       (obj_name lang__Environment)
       (visibility public)

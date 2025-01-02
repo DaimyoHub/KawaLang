@@ -18,10 +18,12 @@ type expr =
   | Neg of expr
 
   (* Comparison operators *)
-  | Eq of expr * expr
+  | Eq  of expr * expr
   | Neq of expr * expr
   | Lne of expr * expr
   | Leq of expr * expr
+  | Gne of expr * expr
+  | Geq of expr * expr
 
   (* Logic operators *)
   | Con of expr * expr

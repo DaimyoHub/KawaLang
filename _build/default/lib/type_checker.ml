@@ -15,13 +15,7 @@ open Type_error
  * symbol resolving error is reported.
  *)
 let type_mem_loc ctx env sym =
-  match Env.get env sym with
-    Some loc -> Ok loc.typ
-  | None -> (
-      match Env.get ctx.globals sym with
-        Some loc -> Ok loc.typ
-      | None -> report_symbol_resolv (Not_loc sym)
-    )
+  get_variable_type ctx env sym
 
 
 (*
@@ -50,7 +44,9 @@ let rec type_expr ctx env expr =
     | Neg a -> texpr a
     | Eq (e1, e2)
     | Neq (e1, e2)
+    | Geq (e1, e2)
     | Lne (e1, e2)
+    | Gne (e1, e2)
     | Leq (e1, e2) -> tbo Int Bool e1 e2
     | Con (e1, e2)
     | Dis (e1, e2) -> tbo Bool Bool e1 e2
@@ -59,7 +55,12 @@ let rec type_expr ctx env expr =
         match get_class_from_symbol ctx class_symbol with
           Ok cls -> (
             match get_method_from_class cls class_symbol with
-              Ok ctor -> type_inst ctx env cls ctor args
+              Ok ctor -> (
+                match type_call ctx env cls.sym Void args ctor.params with
+                  Ok Void -> Ok (Cls class_symbol)
+                | Error rep -> propagate rep
+                | Ok _ -> failwith "Unreachable : ctor does not return type void"
+              )
             | _ ->
                 report_symbol_resolv (Class_without_ctor class_symbol)
           )
@@ -71,10 +72,10 @@ let rec type_expr ctx env expr =
             match get_class_from_symbol ctx class_symbol with
               Ok cls -> (
                 match get_method_from_class cls callee with
-                  Ok meth -> type_call ctx env caller meth args
-                | Error rep -> Error rep
+                  Ok meth -> type_call ctx env callee meth.ret_typ args meth.params
+                | Error rep -> propagate rep
               )
-            | Error rep -> Error rep
+            | Error rep -> propagate rep
           )
         | Ok t -> 
             report None (Some t) (Loc_type_not_user_def caller)
@@ -82,52 +83,64 @@ let rec type_expr ctx env expr =
       )
 
 
-(*
- * type_call context env caller callee args
- *
- * Types a call to a given method. It checks if passed argument types correspond to
- * parameter types, then it recursivelly checks the if the method code is well-typed.
- *)
-and type_call ctx env caller callee args =
-  let targs = type_args ctx env in
-  let loc =
-    match Env.get env caller with
-      Some loc -> loc
-    | None -> (
-        match Env.get ctx.globals caller with
-          Some loc -> loc
-        | None -> failwith "Unreachable"
-      )
+and check_method ctx class_def method_def =
+  let mapped_attrs = Env.create () in
+  Hashtbl.iter (fun _ v ->
+    let nsym = 
+      let Sym name = v.sym in Sym ("this." ^ name)
+    in
+    Env.add mapped_attrs nsym { sym = nsym; typ = v.typ; data = No_data }
+  ) (Env.raw class_def.attrs);
+
+  let map_env env =
+    let res = Env.create () in
+    Hashtbl.iter (fun k v ->
+      match v.typ with
+        Cls cls_sym -> (
+          match ClsDefTable.get ctx.classes cls_sym with
+            Some cls -> 
+              Hashtbl.iter (fun a b ->
+                let nsym = 
+                  let Sym attr_name = a and Sym obj_name = k in
+                  Sym (obj_name ^ "." ^ attr_name)
+                in
+                Env.add res nsym { sym = nsym; typ = b.typ; data = No_data }
+              ) (Env.raw cls.attrs)
+          | None -> let _ =
+              report None (Some v.typ) (Class_type_not_exist cls_sym) in ()
+        )
+      | _ -> Env.add res k v
+    ) (Env.raw env);
+    res
   in
-  let calling_env =
-    Hashtbl.fold (fun k v acc -> 
-      let (typ, data) = v in
-      Env.add acc k { sym = k; typ = typ; data = data };
-      acc
+
+  let envs = [
+    map_env method_def.locals;
+    map_env method_def.params;
+    mapped_attrs
+  ] in
+  match Env.merge envs with
+    Some env ->
+      let _ = Env.add env (Sym "this")
+        { sym = Sym "this"; typ = Cls class_def.sym; data = No_data }
+      in
+      (match check_seq ctx env method_def.ret_typ method_def.code with
+        Ok rt -> Ok rt
+      | Error _ -> report None None (Method_ill_typed method_def.sym))
+  | None -> report_symbol_resolv Diff_locs_same_sym
+
+
+and check_class ctx class_sym =
+  match get_class_from_symbol ctx class_sym with
+    Ok cls -> (
+      let _ = Hashtbl.iter (
+        fun _ def ->
+          let _ = check_method ctx cls def in ()
+      ) (MethDefTable.raw cls.meths)
+      in
+      Ok Void
     )
-    (get_object_attributes loc)
-    (Env.create ())
-  in
-  match targs callee.sym callee.ret_typ args callee.params with
-    Ok rt -> check_seq ctx calling_env rt callee.code
   | Error rep -> propagate rep
-
-
-(*
- * type_inst context env caller callee args
- *
- * Types a call to a given ctor. It checks if passed argument types correspond to
- * parameter types, then it recursivelly checks the if the ctor code is well-typed.
- *)
-and type_inst ctx env cls ctor args =
-  let targs = type_args ctx env in
-  match targs ctor.sym Void args ctor.params with
-    Ok Void ->
-      check_seq ctx cls.attrs Void ctor.code
-  | Ok t ->
-      report (Some Void) (Some t) Void_method_return
-  | Error rep -> propagate rep
-
 
 
 (*
@@ -170,7 +183,7 @@ and type_bin_op ctx env exp res e1 e2 =
  * Types the given list of arguments then checks if it computed types correspond to the
  * parameter types of the given method.
  *)
-and type_args ctx env sym ret_typ args params =
+and type_call ctx env sym ret_typ args params =
   let param_ts = 
     Hashtbl.fold (
       fun _ v acc -> v.typ :: acc
@@ -204,7 +217,7 @@ and check_instr ctx env exp instr =
     Print e -> (
       match chk e Int with
         Ok _ -> Ok Void
-      | err -> err
+      | Error rep -> report (Some Int) (rep.obtained) (Print_not_int e)
     )
   | Set (sym, Inst (class_symbol, args)) -> (
       match get_variable_type ctx env sym with
@@ -268,23 +281,46 @@ and check_instr ctx env exp instr =
  * should return a result or not.
  *)
 and check_seq ctx env exp seq =
-  let chk = check ctx env
-  and chs = check_seq ctx env
+  let rec aux has_already_returned expected seq =
+    match seq with
+      [] ->
+        if exp <> Void && has_already_returned = false then
+          report None None Typed_method_not_return
+        else Ok Void
+    | Ret e :: s ->
+        if has_already_returned then
+          let _ = aux true Void s in
+          report None None Already_returned
+        else
+          if exp = Void then
+            (* we keep type checking as if no return statement has been found *)
+            let _ = aux false Void s in 
+            report None None Void_method_return
+          else (
+            match check ctx env e exp with
+              Ok tr -> (
+                match aux true Void s with
+                  Ok _ -> Ok tr
+                | Error rep -> propagate rep
+              )
+            | Error rep -> report (Some exp) (rep.obtained) (Return_bad_type)
+          )
+    | instr :: s -> (
+        (if has_already_returned then 
+            let _ = report None None Dead_code in ());
+
+        match instr with
+          If (_, _, _) -> (
+            match check_instr ctx env exp instr with
+              Ok Void -> aux false expected s
+            | Ok t -> 
+                if t = expected then aux true exp s
+                else aux false exp s
+            | Error rep -> propagate rep
+          )
+        | _ ->
+            let _ = check_instr ctx env Void instr in
+            aux false exp s)
   in
-  match seq with
-    [] ->
-      if exp <> Void then
-        report None None Typed_method_not_return
-      else Ok Void
-  | Ret e :: _ ->
-      if exp = Void then
-        report None None Void_method_return
-      else chk e exp
-  | instr :: s -> (
-      match check_instr ctx env Void instr with
-        Ok _ -> chs exp s
-      | Error rep ->
-          let _ = propagate rep in
-          chs exp s
-    )
+  aux false exp seq
 

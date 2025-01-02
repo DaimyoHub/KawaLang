@@ -10,10 +10,12 @@ module type Env_t =
 
     val create : unit -> t
 
-    val add : t -> k -> v -> unit
-    val rem : t -> k -> v option
-    val get : t -> k -> v option
-    val raw : t -> (k, v) Hashtbl.t
+    val add          : t -> k -> v -> unit
+    val rem          : t -> k -> v option
+    val get          : t -> k -> v option
+    val raw          : t -> (k, v) Hashtbl.t
+    val from_hashtbl : (k, v) Hashtbl.t -> t
+    val merge   : t list -> t option
   end
 
 module type Value = sig type t end
@@ -45,6 +47,22 @@ module Make (V : Value) : Env_t
       with Not_found -> None  
 
     let raw env = env
+
+    let from_hashtbl t = t
+
+    let rec merge = function
+        [] -> Some (create ())
+      | x :: s -> (
+          Hashtbl.fold (fun k v acc ->
+            match acc with
+              Some r -> (
+                try let _ = Hashtbl.find r k in None
+                with _ -> (Hashtbl.add r k v; Some r)
+              )
+            | None -> None
+          ) (raw x) (merge s)
+        )
+
   end
 
 type data =

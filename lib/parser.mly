@@ -4,6 +4,7 @@
   open Abstract_syntax
   open Context
   open Environment
+  open Symbol
 
 %}
 
@@ -23,7 +24,7 @@
 
 %token PLUS MINUS TIMES DIVIDES MODULO 
 %token AND OR NOT
-%token EQUALS NEQUALS LESS LESS_EQUALS
+%token EQUALS NOT_EQUALS LESS LESS_EQUALS GREATER GREATER_EQUALS
 
 %token LPAR RPAR BEGIN END SEMI
 %token COMMA
@@ -38,7 +39,7 @@
 %token SET
 %token <int> NUM
 
-%left NEQUALS EQUALS LESS_EQUALS LESS
+%left NOT_EQUALS EQUALS LESS_EQUALS LESS GREATER GREATER_EQUALS
 %left AND OR
 %left NOT
 %left MODULO
@@ -153,7 +154,7 @@ instr:
 | name=IDENT SET e=expr SEMI
     { Set (Sym name, e) }
 | THIS DOT attr=IDENT SET e=expr SEMI
-    { Set (Sym attr, e) }
+    { Set (Sym ("this." ^ attr), e) }
 | obj=IDENT DOT attr=IDENT SET e=expr SEMI
     { Set (Sym (obj ^ "." ^ attr), e) }
 | IF LPAR cond=expr RPAR BEGIN is1=list(instr) END ELSE BEGIN is2=list(instr) END
@@ -177,6 +178,12 @@ expr:
 | FALSE                                             { False }
 | name=IDENT                                        { Loc (Sym name) }
 | THIS                                              { Loc (Sym "this") }
+| THIS DOT attr_or_meth=IDENT args=option(args)
+    {
+      match args with
+        None   -> Loc (Sym ("this." ^ attr_or_meth))
+      | Some l -> Call (Sym "this", Sym attr_or_meth, l)     
+    }
 | obj=IDENT DOT attr_or_meth=IDENT args=option(args) 
     {
       match args with
@@ -192,9 +199,11 @@ expr:
 | MINUS e=expr                                      { Neg e }
 
 | lhs=expr    EQUALS   rhs=expr                     { Eq  (lhs, rhs) }
-| lhs=expr   NEQUALS   rhs=expr                     { Neq (lhs, rhs) }
+| lhs=expr  NOT_EQUALS rhs=expr                     { Neq (lhs, rhs) }
 | lhs=expr     LESS    rhs=expr                     { Lne (lhs, rhs) }
 | lhs=expr LESS_EQUALS rhs=expr                     { Leq (lhs, rhs) }
+| lhs=expr    GREATER  rhs=expr                     { Gne (lhs, rhs) }
+| lhs=expr GREATER_EQUALS rhs=expr                  { Geq (lhs, rhs) }
 
 | lhs=expr     AND     rhs=expr                     { Con (lhs, rhs) }
 | lhs=expr      OR     rhs=expr                     { Dis (lhs, rhs) }

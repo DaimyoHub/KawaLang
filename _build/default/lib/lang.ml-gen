@@ -6,6 +6,9 @@ module Abstract_syntax = Lang__Abstract_syntax
 (** @canonical Lang.Context *)
 module Context = Lang__Context
 
+(** @canonical Lang.Debug *)
+module Debug = Lang__Debug
+
 (** @canonical Lang.Environment *)
 module Environment = Lang__Environment
 

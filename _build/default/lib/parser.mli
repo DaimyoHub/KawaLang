@@ -16,9 +16,9 @@ type token =
   | PLUS
   | OR
   | NUM of (int)
+  | NOT_EQUALS
   | NOT
   | NEW
-  | NEQUALS
   | MODULO
   | MINUS
   | METHOD
@@ -29,6 +29,8 @@ type token =
   | INT
   | IF
   | IDENT of (string)
+  | GREATER_EQUALS
+  | GREATER
   | FALSE
   | EQUALS
   | EOF
