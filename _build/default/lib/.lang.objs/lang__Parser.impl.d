@@ -1,1 +1,1 @@
-lib/parser.ml: Abstract_syntax ClsDefTable Context Env Environment List MethDefTable Printf Symbol Type
+lib/parser.ml: Abstract_syntax ClassTable Context Env Environment List MethodTable Printf Symbol Type

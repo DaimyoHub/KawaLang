@@ -13,6 +13,7 @@ let type_to_string typ =
   | Bool -> "bool"
   | Cls (Sym cls) -> cls
   | Void -> "void"
+  | No_type -> "no type"
 
 let print_env env =
   let t = Env.raw env in

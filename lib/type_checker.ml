@@ -5,6 +5,7 @@ open Abstract_syntax
 open Symbol_resolver
 open Symbol
 open Type_error
+open Method
 
 
 (*
@@ -102,86 +103,23 @@ let rec type_expr ctx env expr =
       )
 
 
+(*
+ * check_method context class_def method_def
+ * 
+ * Checks if a given method associated to a class is well typed or not.
+ *)
 and check_method ctx class_def method_def =
-  let mapped_attrs = Env.create () in
-  Hashtbl.iter (fun _ v ->
-    let nsym = 
-      let Sym name = v.sym in Sym ("this." ^ name)
-    in
-    Env.add mapped_attrs nsym { sym = nsym; typ = v.typ; data = No_data }
-  ) (Env.raw class_def.attrs);
-
-  let map_env env =
-    let res = Env.create () in
-    Hashtbl.iter (fun k v ->
-      match v.typ with
-        Cls cls_sym -> (
-          match ClsDefTable.get ctx.classes cls_sym with
-            Some cls -> 
-              Hashtbl.iter (fun a b ->
-                let nsym = 
-                  let Sym attr_name = a and Sym obj_name = k in
-                  Sym (obj_name ^ "." ^ attr_name)
-                in
-                Env.add res nsym { sym = nsym; typ = b.typ; data = No_data }
-              ) (Env.raw cls.attrs)
-          | None -> let _ =
-              report None (Some v.typ) (Class_type_not_exist cls_sym) in ()
-        )
-      | _ -> Env.add res k v
-    ) (Env.raw env);
-    res
-  in
-
-  let map_params params =
-    let res = Env.create () in
-    List.iter (fun (k, v) ->
-      match v.typ with
-        Cls cls_sym -> (
-          match ClsDefTable.get ctx.classes cls_sym with
-            Some cls -> 
-              Hashtbl.iter (fun a b ->
-                let nsym = 
-                  let Sym attr_name = a and Sym obj_name = k in
-                  Sym (obj_name ^ "." ^ attr_name)
-                in
-                Env.add res nsym { sym = nsym; typ = b.typ; data = No_data }
-              ) (Env.raw cls.attrs)
-          | None -> let _ =
-              report None (Some v.typ) (Class_type_not_exist cls_sym) in ()
-        )
-      | _ -> Env.add res k v
-    ) params;
-    res
-  in
-
-  let envs = [
-    map_env method_def.locals;
-    map_params method_def.params;
-    mapped_attrs
-  ] in
-  match Env.merge envs with
-    Some env ->
+  let env = make_type_checking_env ctx class_def method_def in
+  match env with
+    Some env -> (
       let _ = Env.add env (Sym "this")
         { sym = Sym "this"; typ = Cls class_def.sym; data = No_data }
       in
-      (match check_seq ctx env method_def.ret_typ method_def.code with
+      match check_seq ctx env method_def.ret_typ method_def.code with
         Ok rt -> Ok rt
-      | Error _ -> report None None (Method_ill_typed method_def.sym))
-  | None -> report_symbol_resolv Diff_locs_same_sym
-
-
-and check_class ctx class_sym =
-  match get_class_from_symbol ctx class_sym with
-    Ok cls -> (
-      let _ = Hashtbl.iter (
-        fun _ def ->
-          let _ = check_method ctx cls def in ()
-      ) (MethDefTable.raw cls.meths)
-      in
-      Ok Void
+      | Error _ -> report None None (Method_ill_typed method_def.sym)
     )
-  | Error rep -> propagate rep
+  | None -> report_symbol_resolv Diff_locs_same_sym
 
 
 (*
@@ -268,7 +206,8 @@ and check_instr ctx env exp instr =
     )
   | Set (sym, Inst (class_symbol, args)) -> (
       match get_variable_type ctx env sym with
-        Ok (Cls class_symbol) -> (
+        Ok No_type -> failwith "TODO : type inference"
+      | Ok (Cls class_symbol) -> (
           match chk (Inst (class_symbol, args)) Void with
             Ok _ -> Ok Void
           | Error rep -> propagate rep
@@ -279,17 +218,15 @@ and check_instr ctx env exp instr =
     )
   | Set (sym, e) -> (
       match get_variable_type ctx env sym with
+        Ok No_type -> failwith "TODO : type inference"
       | Ok t -> (
           match chk e t with
             Ok _ -> Ok Void
-          | Error rep -> (
-              match rep.kind with
-                Expected_args _
-              | Unexpected_args _
-              | Arg_ill_typed (_, _) ->
-                  report None None (Set_ill_typed_without_info sym)
-              | _ -> report (Some t) rep.obtained (Set_ill_typed (sym, e))
-            )
+          | Error rep -> 
+              if is_call_related_report rep then
+                report None None (Set_ill_typed_without_info sym)
+              else
+                report (Some t) rep.obtained (Set_ill_typed (sym, e))
         )
       | Error rep -> propagate rep
     ) 
@@ -307,7 +244,12 @@ and check_instr ctx env exp instr =
       | Error rep -> propagate rep
     )
 
-
+(*
+ * check_if_statement context env expected_type if_stmt
+ * 
+ * Checks if a given if statement is well-typed. I define the meaning of the 
+ * sentence "an if statement is well typed" in my programming report (see README.md).
+ *)
 and check_if_statement ctx env exp instr =
   let rec check_branch flag seq exp =
     match seq with
@@ -326,7 +268,7 @@ and check_if_statement ctx env exp instr =
     | instr :: s -> (
         match check_instr ctx env exp instr with
           Ok Void -> check_branch flag s exp
-        | Ok _ -> failwith "Unreachable : check_if_statement.check_branch"
+        | Ok _ -> failwith "Unreachable : check_if_statement.check_branch" 
         | Error rep ->
             let _ = report (Some Void) rep.obtained (If_branch_ill_typed flag) in
             check_branch flag s exp
@@ -341,7 +283,10 @@ and check_if_statement ctx env exp instr =
               match check_branch false seq2 t with
                 Ok u -> 
                   if t = u then Ok t
-                  else report (Some t) (Some u) Branches_not_return_same
+                  else if exp <> Void && (t <> Void && u = Void) || (t = Void && u <> Void) then
+                    report None None If_stmt_may_return
+                  else
+                    report (Some t) (Some u) Branches_not_return_same
               | Error rep -> report (Some t) rep.obtained Branches_not_return_same
             )
           | Error rep -> propagate rep
@@ -360,19 +305,23 @@ and check_if_statement ctx env exp instr =
 and check_seq ctx env exp seq =
   match seq with
     [] ->
-      if exp = Void then Ok Void
-      else report None None Typed_method_not_return
+      if exp = Void then
+        Ok Void
+      else
+        report None None Typed_method_not_return
   | [Ret e] ->
       if exp <> Void then (
         match check ctx env e exp with
           Ok t -> Ok t
         | Error rep -> propagate rep
-      ) else report (Some Void) None Void_method_return
+      ) else
+        report (Some Void) None Void_method_return
   | Ret e :: s ->
       let _ = check_seq ctx env exp s and _ = report None None Dead_code in (
         match check ctx env e exp with
           Ok _ -> Ok exp
-        | Error rep -> report (Some exp) rep.obtained Return_bad_type
+        | Error rep ->
+            report (Some exp) rep.obtained Return_bad_type
       )
   | If (c, s1, s2) :: s -> (
       match check_instr ctx env exp (If (c, s1, s2)) with

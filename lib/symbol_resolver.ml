@@ -10,7 +10,7 @@ open Type_error
  * definition. If it does not, it reports a symbol resolving error.
  *)
 let get_class_from_symbol ctx sym =
-  match ClsDefTable.get ctx.classes sym with
+  match ClassTable.get ctx.classes sym with
     None -> report_symbol_resolv (Class_not_found sym)
   | Some cls -> Ok cls
 
@@ -23,7 +23,7 @@ let get_class_from_symbol ctx sym =
  * symbol resolving error.
  *)
 let get_method_from_class cls sym =
-  match MethDefTable.get cls.meths sym with
+  match MethodTable.get cls.meths sym with
     None -> report_symbol_resolv (Method_not_in_class (cls.sym, sym))
   | Some meth -> Ok meth
 

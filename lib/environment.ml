@@ -2,7 +2,7 @@ open Symbol
 open Abstract_syntax
 open Type
 
-module type Env_t = 
+module type Table = 
   sig
     type t
     type k
@@ -14,13 +14,13 @@ module type Env_t =
     val rem          : t -> k -> v option
     val get          : t -> k -> v option
     val raw          : t -> (k, v) Hashtbl.t
-    val from_hashtbl : (k, v) Hashtbl.t -> t
-    val merge   : t list -> t option
+    val iter         : (k -> v -> unit) -> t -> unit
+    val merge        : t list -> t option
   end
 
 module type Value = sig type t end
 
-module Make (V : Value) : Env_t
+module Make (V : Value) : Table
     with type v = V.t
     and  type k = symbol
     and  type t = (symbol, V.t) Hashtbl.t =
@@ -32,7 +32,10 @@ module Make (V : Value) : Env_t
     let create () = Hashtbl.create 10
 
     let add env k v =
-      Hashtbl.add env k v
+      try 
+        let _ = Hashtbl.find env k in
+        Hashtbl.replace env k v
+      with _ -> Hashtbl.add env k v
       
     let rem env k =
       try
@@ -48,7 +51,7 @@ module Make (V : Value) : Env_t
 
     let raw env = env
 
-    let from_hashtbl t = t
+    let iter f env = Hashtbl.iter f (raw env)
 
     let rec merge = function
         [] -> Some (create ())
@@ -81,7 +84,7 @@ let get_object_attributes loc =
     Obj attrs -> attrs
   | _ -> raise (Invalid_argument "arg is not an object")
 
-module Env : Env_t
+module Env : Table
     with type v = loc
     and  type k = symbol 
   = Make (struct type t = loc end)

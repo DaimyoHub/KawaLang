@@ -36,6 +36,9 @@
    lang/lang__Lexer.cmi
    lang/lang__Lexer.cmt
    lang/lang__Lexer.cmx
+   lang/lang__Method.cmi
+   lang/lang__Method.cmt
+   lang/lang__Method.cmx
    lang/lang__Parser.cmi
    lang/lang__Parser.cmt
    lang/lang__Parser.cmti
@@ -56,6 +59,7 @@
    lang/lang__Type_error.cmt
    lang/lang__Type_error.cmx
    lang/lexer.ml
+   lang/method.ml
    lang/parser.ml
    lang/parser.mli
    lang/symbol.ml
@@ -109,6 +113,10 @@
       (obj_name lang__Lexer)
       (visibility public)
       (source (path Lexer) (impl (path lang/lexer.ml))))
+     (module
+      (obj_name lang__Method)
+      (visibility public)
+      (source (path Method) (impl (path lang/method.ml))))
      (module
       (obj_name lang__Parser)
       (visibility public)

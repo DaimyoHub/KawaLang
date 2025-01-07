@@ -1,4 +1,4 @@
 open Symbol
 
-type typ = Int | Bool | Cls of symbol | Void
+type typ = Int | Bool | Cls of symbol | Void | No_type
 

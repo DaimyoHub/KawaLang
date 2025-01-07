@@ -37,6 +37,7 @@ type typ_err_kind =
   | Return_bad_type
   | If_branch_ill_typed     of bool
   | Set_ill_typed_without_info of symbol
+  | If_stmt_may_return
 
 
 type typ_err_report = {
@@ -53,6 +54,7 @@ let ttos ot =
         Int -> "int"
       | Bool -> "bool"
       | Void -> "void"
+      | No_type -> "no type"
       | Cls (Sym s) -> s
     )
 
@@ -86,7 +88,8 @@ let pprint rep =
       fmt "Expression has type %s. Expected an expression of type %s.\n" 
         (ttos rep.obtained) (ttos rep.expected)
   | Cond_not_bool _ ->
-      "Condition expression is not a predicate.\n"
+      fmt "Condition expression is not a predicate. Expression has type %s.\n"
+        (ttos rep.obtained)
   | Void_method_return ->
       "Method typed as void should not return.\n"
   | Typed_method_not_return ->
@@ -133,6 +136,8 @@ let pprint rep =
         (if b then "first" else "second")
   | Set_ill_typed_without_info (Sym name) ->
       fmt "Unable to set variable '%s' : RHS operand is ill typed.\n" name
+  | If_stmt_may_return ->
+      fmt "Conditional statement only returns in one branch.\n"
 
 let report exp obt kind =
   let rep = {
@@ -148,3 +153,10 @@ let propagate rep = Error rep
 let report_symbol_resolv err =
   report None None (Sym_res_err err)
 
+let is_call_related_report rep =
+  match rep.kind with
+    Expected_args _
+  | Unexpected_args _
+  | Arg_ill_typed (_, _) -> true
+  | _ -> false
+   

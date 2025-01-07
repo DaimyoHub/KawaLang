@@ -1,5 +1,5 @@
-var bool test;
-var point p;
+var int test;
+var int p;
 
 class point {
   attr int x;
@@ -11,14 +11,7 @@ class point {
   }
 
   method int reduce(point p) {
-    var int test;
-
-    if (true) {
-      test = 0;
-      return 5;
-    } else {
-      test = 0;
-    }
+    
   }
 
   method int sum() {
@@ -27,15 +20,8 @@ class point {
 }
 
 main {
-  p = new point(true, 2);
-
-  if (test) {
-    while (4 + 8 < 9) {
-      print(1);
-    }
-  } else {
-    print(2);
-  }
+  p = new point(4, 2);
+  test = true;
+  if (test) {} else {}
 }
-
 

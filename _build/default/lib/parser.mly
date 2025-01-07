@@ -5,6 +5,7 @@
   open Context
   open Environment
   open Symbol
+  open Type
 
 %}
 
@@ -63,16 +64,16 @@ program:
       classes = 
         List.fold_left (
           fun acc (x : class_def) ->
-            ClsDefTable.add acc x.sym x;
+            ClassTable.add acc x.sym x;
             acc
-        ) (ClsDefTable.create ()) cls;
+        ) (ClassTable.create ()) cls;
       globals =
         List.fold_left (
           fun acc x ->
             Env.add acc x.sym x;
             acc
         ) (Env.create ()) glb;
-      main = List.rev main
+      main = main
     }}
 ;
 
@@ -106,7 +107,7 @@ method_def:
             Env.add acc x.sym x;
             acc
         ) (Env.create ()) locals;
-      code = List.rev code
+      code = code
     }}
 | METHOD t=typ name=IDENT LPAR RPAR BEGIN locals=list(var_decl) code=list(instr) END
     {{
@@ -119,7 +120,7 @@ method_def:
             Env.add acc x.sym x;
             acc
         ) (Env.create ()) locals;
-      code = List.rev code
+      code = code
     }}
 
 ;
@@ -137,9 +138,9 @@ class_def:
       meths =
         List.fold_left (
           fun acc (x : method_def) ->
-            MethDefTable.add acc x.sym x;
+            MethodTable.add acc x.sym x;
             acc
-        ) (MethDefTable.create ()) meths
+        ) (MethodTable.create ()) meths
     }}
 
 (* ADD ATTR SET *)
@@ -153,7 +154,7 @@ instr:
 | obj=IDENT DOT attr=IDENT SET e=expr SEMI
     { Set (Sym (obj ^ "." ^ attr), e) }
 | IF LPAR cond=expr RPAR BEGIN is1=list(instr) END ELSE BEGIN is2=list(instr) END
-    { If (cond, List.rev is1, List.rev is2) }
+    { If (cond, is1, is2) }
 | WHILE LPAR cond=expr RPAR BEGIN seq=list(instr) END
     { While (cond, seq) }
 | RETURN e=expr SEMI
@@ -204,6 +205,6 @@ expr:
 | lhs=expr      OR     rhs=expr                     { Dis (lhs, rhs) }
 | NOT e=expr                                        { Not e }
 
-| NEW name=IDENT args=args                { Inst (Sym name, args) }
+| NEW name=IDENT args=args                          { Inst (Sym name, args) }
 ;
 

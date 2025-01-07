@@ -1,0 +1,18 @@
+
+class foo {
+  method int bar() {
+    if (true) {
+      return 1;
+    } else {}
+  }
+
+  method int barbar() {
+    if (true) {} else {}
+
+    return 5;
+  }
+}
+
+main {
+
+}

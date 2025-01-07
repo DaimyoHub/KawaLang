@@ -20,9 +20,11 @@ let _ =
   in
 
   print_endline "Checking classes :";
-  Hashtbl.iter (fun k _ ->
-    let _ = Type_checker.check_class prog k in ()
-  ) (ClsDefTable.raw prog.classes);
+  ClassTable.iter (fun _ cls ->
+    MethodTable.iter (fun _ meth ->
+      let _ = Type_checker.check_method prog cls meth in ()
+    ) cls.meths
+  ) prog.classes;
 
   print_endline "Checking main :";
   let _ = Type_checker.check_seq prog (Env.create ()) Void prog.main in ()

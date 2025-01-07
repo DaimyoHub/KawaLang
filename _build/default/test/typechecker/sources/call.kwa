@@ -8,10 +8,12 @@ class cls {
 }
 
 main {
-  /*res = c.test(5, c);
+  res = c.test(5, c);
   
-  res = c.test(c);*/
-
   res = c.test(c);
+
+  res = c.test(c, 5);
+
+  res = c.test(c, 5, 5);
 }
 

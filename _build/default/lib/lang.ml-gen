@@ -18,6 +18,9 @@ module Interpreter = Lang__Interpreter
 (** @canonical Lang.Lexer *)
 module Lexer = Lang__Lexer
 
+(** @canonical Lang.Method *)
+module Method = Lang__Method
+
 (** @canonical Lang.Parser *)
 module Parser = Lang__Parser
 

@@ -1,1 +1,1 @@
-lib/symbol_resolver.ml: ClsDefTable Context Env Environment MethDefTable Type_error
+lib/symbol_resolver.ml: ClassTable Context Env Environment MethodTable Type_error

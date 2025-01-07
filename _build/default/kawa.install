@@ -31,6 +31,9 @@ lib: [
   "_build/install/default/lib/kawa/lang/lang__Lexer.cmi" {"lang/lang__Lexer.cmi"}
   "_build/install/default/lib/kawa/lang/lang__Lexer.cmt" {"lang/lang__Lexer.cmt"}
   "_build/install/default/lib/kawa/lang/lang__Lexer.cmx" {"lang/lang__Lexer.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Method.cmi" {"lang/lang__Method.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Method.cmt" {"lang/lang__Method.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Method.cmx" {"lang/lang__Method.cmx"}
   "_build/install/default/lib/kawa/lang/lang__Parser.cmi" {"lang/lang__Parser.cmi"}
   "_build/install/default/lib/kawa/lang/lang__Parser.cmt" {"lang/lang__Parser.cmt"}
   "_build/install/default/lib/kawa/lang/lang__Parser.cmti" {"lang/lang__Parser.cmti"}
@@ -51,6 +54,7 @@ lib: [
   "_build/install/default/lib/kawa/lang/lang__Type_error.cmt" {"lang/lang__Type_error.cmt"}
   "_build/install/default/lib/kawa/lang/lang__Type_error.cmx" {"lang/lang__Type_error.cmx"}
   "_build/install/default/lib/kawa/lang/lexer.ml" {"lang/lexer.ml"}
+  "_build/install/default/lib/kawa/lang/method.ml" {"lang/method.ml"}
   "_build/install/default/lib/kawa/lang/parser.ml" {"lang/parser.ml"}
   "_build/install/default/lib/kawa/lang/parser.mli" {"lang/parser.mli"}
   "_build/install/default/lib/kawa/lang/symbol.ml" {"lang/symbol.ml"}
