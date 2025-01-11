@@ -1,5 +1,0 @@
-(executable
-  (name kawai)
-  (public_name kawa.interpreter)
-  (libraries kawa.lang)
-  (package kawa))

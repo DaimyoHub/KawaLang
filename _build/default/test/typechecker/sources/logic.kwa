@@ -1,6 +1,0 @@
-main {
-  3 && true == true;
-  !(true || false) == test && true;
-  !!!true;
-}
-
