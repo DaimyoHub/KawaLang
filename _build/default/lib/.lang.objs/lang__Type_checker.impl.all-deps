@@ -1,7 +1,7 @@
 lang__Abstract_syntax
+lang__Allocator
 lang__Context
 lang__Environment
-lang__Method
 lang__Symbol
 lang__Symbol_resolver
 lang__Type

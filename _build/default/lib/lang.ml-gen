@@ -3,6 +3,9 @@
 (** @canonical Lang.Abstract_syntax *)
 module Abstract_syntax = Lang__Abstract_syntax
 
+(** @canonical Lang.Allocator *)
+module Allocator = Lang__Allocator
+
 (** @canonical Lang.Context *)
 module Context = Lang__Context
 

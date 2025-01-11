@@ -53,7 +53,8 @@ module Make (V : Value) : Table
 
     let iter f env = Hashtbl.iter f (raw env)
 
-    let rec merge = function
+    let rec merge envs =
+      match envs with
         [] -> Some (create ())
       | x :: s -> (
           Hashtbl.fold (fun k v acc ->

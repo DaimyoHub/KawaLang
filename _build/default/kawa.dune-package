@@ -7,6 +7,7 @@
   (META
    dune-package
    lang/abstract_syntax.ml
+   lang/allocator.ml
    lang/context.ml
    lang/debug.ml
    lang/environment.ml
@@ -21,6 +22,9 @@
    lang/lang__Abstract_syntax.cmi
    lang/lang__Abstract_syntax.cmt
    lang/lang__Abstract_syntax.cmx
+   lang/lang__Allocator.cmi
+   lang/lang__Allocator.cmt
+   lang/lang__Allocator.cmx
    lang/lang__Context.cmi
    lang/lang__Context.cmt
    lang/lang__Context.cmx
@@ -93,6 +97,10 @@
       (obj_name lang__Abstract_syntax)
       (visibility public)
       (source (path Abstract_syntax) (impl (path lang/abstract_syntax.ml))))
+     (module
+      (obj_name lang__Allocator)
+      (visibility public)
+      (source (path Allocator) (impl (path lang/allocator.ml))))
      (module
       (obj_name lang__Context)
       (visibility public)

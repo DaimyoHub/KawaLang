@@ -2,6 +2,7 @@ lib: [
   "_build/install/default/lib/kawa/META"
   "_build/install/default/lib/kawa/dune-package"
   "_build/install/default/lib/kawa/lang/abstract_syntax.ml" {"lang/abstract_syntax.ml"}
+  "_build/install/default/lib/kawa/lang/allocator.ml" {"lang/allocator.ml"}
   "_build/install/default/lib/kawa/lang/context.ml" {"lang/context.ml"}
   "_build/install/default/lib/kawa/lang/debug.ml" {"lang/debug.ml"}
   "_build/install/default/lib/kawa/lang/environment.ml" {"lang/environment.ml"}
@@ -16,6 +17,9 @@ lib: [
   "_build/install/default/lib/kawa/lang/lang__Abstract_syntax.cmi" {"lang/lang__Abstract_syntax.cmi"}
   "_build/install/default/lib/kawa/lang/lang__Abstract_syntax.cmt" {"lang/lang__Abstract_syntax.cmt"}
   "_build/install/default/lib/kawa/lang/lang__Abstract_syntax.cmx" {"lang/lang__Abstract_syntax.cmx"}
+  "_build/install/default/lib/kawa/lang/lang__Allocator.cmi" {"lang/lang__Allocator.cmi"}
+  "_build/install/default/lib/kawa/lang/lang__Allocator.cmt" {"lang/lang__Allocator.cmt"}
+  "_build/install/default/lib/kawa/lang/lang__Allocator.cmx" {"lang/lang__Allocator.cmx"}
   "_build/install/default/lib/kawa/lang/lang__Context.cmi" {"lang/lang__Context.cmi"}
   "_build/install/default/lib/kawa/lang/lang__Context.cmt" {"lang/lang__Context.cmt"}
   "_build/install/default/lib/kawa/lang/lang__Context.cmx" {"lang/lang__Context.cmx"}

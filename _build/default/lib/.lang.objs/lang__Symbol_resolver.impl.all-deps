@@ -1,4 +1,5 @@
 lang__Abstract_syntax
+lang__Allocator
 lang__Context
 lang__Environment
 lang__Symbol

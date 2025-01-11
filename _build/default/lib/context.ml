@@ -16,9 +16,10 @@ module MethodTable : Table
   = Make (struct type t = method_def end)
 
 type class_def = {
-  sym : symbol;
+  sym   : symbol;
   attrs : Env.t;
-  meths : MethodTable.t
+  meths : MethodTable.t;
+  super : symbol option
 }
 
 module ClassTable : Table

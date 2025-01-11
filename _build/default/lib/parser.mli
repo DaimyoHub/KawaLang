@@ -32,6 +32,7 @@ type token =
   | GREATER_EQUALS
   | GREATER
   | FALSE
+  | EXTENDS
   | EQUALS
   | EOF
   | END

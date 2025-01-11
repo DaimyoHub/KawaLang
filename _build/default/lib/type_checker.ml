@@ -5,18 +5,6 @@ open Abstract_syntax
 open Symbol_resolver
 open Symbol
 open Type_error
-open Method
-
-
-(*
- * type_mem_loc context env expr
- * 
- * Gives the type of a given expression corresponding to a variable or an attribute.
- * If the expression is not such an object or is not in the current context, then a
- * symbol resolving error is reported.
- *)
-let type_mem_loc ctx env sym =
-  get_variable_type ctx env sym
 
 
 (*
@@ -27,15 +15,15 @@ let type_mem_loc ctx env sym =
  * process to allow an exhaustive analysis of the given expression in one pass.
  *)
 let rec type_expr ctx env expr =
-  let tml = type_mem_loc ctx env
-  and tbo = type_bin_op ctx env
+  let tbo = type_bin_op ctx env
   in
   match expr with
       Cst _        -> Ok Int
     | True
     | False        -> Ok Bool
-    | Loc s        -> tml s
-    | This         -> tml (Sym "this")
+    | Loc s        -> get_variable_type ctx env s
+    | Attr (o, s)  -> get_attribute_type ctx env o s
+    | This         -> get_variable_type ctx env (Sym "this")
     | Add (e1, e2) 
     | Mul (e1, e2) 
     | Mod (e1, e2)
@@ -50,7 +38,7 @@ let rec type_expr ctx env expr =
         match type_expr ctx env e1 with
           Ok t -> (
             match check ctx env e2 t with
-              Ok _ -> Ok t
+              Ok _ -> Ok Bool
             | Error rep -> (
                 match rep.kind with
                   Sym_res_err _ -> propagate rep
@@ -72,17 +60,12 @@ let rec type_expr ctx env expr =
       )
 
     | Inst (class_symbol, args) -> (
-        match get_class_from_symbol ctx class_symbol with
-          Ok cls -> (
-            match get_method_from_class cls class_symbol with
-              Ok ctor -> (
-                match type_call ctx env cls.sym Void args ctor.params with
-                  Ok Void -> Ok (Cls class_symbol)
-                | Error rep -> propagate rep
-                | Ok _ -> failwith "Unreachable : ctor does not return type void"
-              )
-            | _ ->
-                report_symbol_resolv (Class_without_ctor class_symbol)
+        match get_ctor_from_symbol ctx class_symbol with
+          Ok ctor -> (
+            match type_call ctx env class_symbol Void args ctor.params with
+              Ok Void -> Ok (Cls class_symbol)
+            | Error rep -> propagate rep
+            | Ok _ -> failwith "Unreachable : ctor does not return type void"
           )
         | Error rep -> propagate rep
       )
@@ -108,8 +91,13 @@ let rec type_expr ctx env expr =
  * 
  * Checks if a given method associated to a class is well typed or not.
  *)
-and check_method ctx class_def method_def =
-  let env = make_type_checking_env ctx class_def method_def in
+and check_method ctx (class_def : class_def) method_def =
+  let mapped_params = List.fold_left (fun acc (sym, loc) ->
+    Env.add acc sym loc;
+    acc
+  ) (Env.create ()) method_def.params
+  in
+  let env = Env.merge [method_def.locals; mapped_params] in
   match env with
     Some env -> (
       let _ = Env.add env (Sym "this")
@@ -204,25 +192,27 @@ and check_instr ctx env exp instr =
         Ok _ -> Ok Void
       | Error rep -> report (Some Int) (rep.obtained) (Print_not_int e)
     )
-  | Set (sym, Inst (class_symbol, args)) -> (
-      match get_variable_type ctx env sym with
+  | Set (loc, Inst (class_symbol, args)) -> (
+      match get_location_type ctx env loc with
         Ok No_type -> failwith "TODO : type inference"
       | Ok (Cls class_symbol) -> (
-          match chk (Inst (class_symbol, args)) Void with
+          match chk (Inst (class_symbol, args)) (Cls class_symbol) with
             Ok _ -> Ok Void
           | Error rep -> propagate rep
         )
       | Ok t ->
+          let sym = Result.get_ok @@ get_location_symbol loc in
           report (Some (Cls class_symbol)) (Some t) (Not_obj_inst (sym, class_symbol))
       | Error rep -> propagate rep
     )
-  | Set (sym, e) -> (
-      match get_variable_type ctx env sym with
+  | Set (loc, e) -> (
+      match get_location_type ctx env loc with
         Ok No_type -> failwith "TODO : type inference"
       | Ok t -> (
           match chk e t with
             Ok _ -> Ok Void
           | Error rep -> 
+              let sym = Result.get_ok @@ get_location_symbol loc in
               if is_call_related_report rep then
                 report None None (Set_ill_typed_without_info sym)
               else

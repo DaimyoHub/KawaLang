@@ -1,27 +1,17 @@
-var int test;
-var int p;
+var point p;
+
 
 class point {
-  attr int x;
+  attr point x;
   attr int y;
 
-  method void point(int a, int b) {
-    this.x = 0;
-    this.y = 0;
-  }
-
-  method int reduce(point p) {
+  method void point(point x, int y) {
     
-  }
-
-  method int sum() {
-    return this.x + this.y;
   }
 }
 
+
 main {
-  p = new point(4, 2);
-  test = true;
-  if (test) {} else {}
+  p = new point(p, 4);
 }
 

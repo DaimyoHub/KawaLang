@@ -29,6 +29,7 @@ type token =
   | GREATER_EQUALS
   | GREATER
   | FALSE
+  | EXTENDS
   | EQUALS
   | EOF
   | END
@@ -44,12 +45,21 @@ type token =
 val menhir_begin_marker : int
 val xv_var_decl : Environment.loc
 val xv_typ : Type.typ
+val xv_super : string
+val xv_separated_nonempty_list_COMMA_param_ :
+  (Symbol.symbol * Environment.loc) list
 val xv_separated_nonempty_list_COMMA_expr_ : Abstract_syntax.expr list
+val xv_separated_list_COMMA_param_ : (Symbol.symbol * Environment.loc) list
 val xv_separated_list_COMMA_expr_ : Abstract_syntax.expr list
 val xv_program : Context.prog_ctx
-val xv_param_def : (Symbol.symbol * Environment.loc) list
+val xv_params : (Symbol.symbol * Environment.loc) list
+val xv_param : Symbol.symbol * Environment.loc
+val xv_option_super_ : string option
+val xv_option_params_ : (Symbol.symbol * Environment.loc) list option
 val xv_option_args_ : Abstract_syntax.expr list option
 val xv_method_def : Context.method_def
+val xv_loption_separated_nonempty_list_COMMA_param__ :
+  (Symbol.symbol * Environment.loc) list
 val xv_loption_separated_nonempty_list_COMMA_expr__ :
   Abstract_syntax.expr list
 val xv_list_var_decl_ : Environment.loc list

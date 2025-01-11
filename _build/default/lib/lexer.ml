@@ -27,13 +27,14 @@
           "while",     WHILE;
           "return",    RETURN;
           "method",    METHOD;
+          "extends",   EXTENDS
         ];
       fun s ->
         try  Hashtbl.find h s
         with Not_found -> IDENT(s)
         
 
-# 37 "lib/lexer.ml"
+# 38 "lib/lexer.ml"
 let __ocaml_lex_tables = {
   Lexing.lex_base =
    "\000\000\226\255\227\255\002\000\001\000\002\000\003\000\004\000\
@@ -191,164 +192,164 @@ let rec token lexbuf =
 and __ocaml_lex_token_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 49 "lib/lexer.mll"
+# 50 "lib/lexer.mll"
                          ( new_line lexbuf; token lexbuf )
-# 197 "lib/lexer.ml"
+# 198 "lib/lexer.ml"
 
   | 1 ->
-# 50 "lib/lexer.mll"
+# 51 "lib/lexer.mll"
                          ( token lexbuf )
-# 202 "lib/lexer.ml"
+# 203 "lib/lexer.ml"
 
   | 2 ->
-# 53 "lib/lexer.mll"
+# 54 "lib/lexer.mll"
                          ( new_line lexbuf; token lexbuf )
-# 207 "lib/lexer.ml"
+# 208 "lib/lexer.ml"
 
   | 3 ->
-# 54 "lib/lexer.mll"
+# 55 "lib/lexer.mll"
                          ( comment lexbuf; token lexbuf )
-# 212 "lib/lexer.ml"
+# 213 "lib/lexer.ml"
 
   | 4 ->
 let
-# 56 "lib/lexer.mll"
+# 57 "lib/lexer.mll"
               n
-# 218 "lib/lexer.ml"
+# 219 "lib/lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 56 "lib/lexer.mll"
+# 57 "lib/lexer.mll"
                          ( NUM(int_of_string n) )
-# 222 "lib/lexer.ml"
+# 223 "lib/lexer.ml"
 
   | 5 ->
 let
-# 57 "lib/lexer.mll"
+# 58 "lib/lexer.mll"
              id
-# 228 "lib/lexer.ml"
+# 229 "lib/lexer.ml"
 = Lexing.sub_lexeme lexbuf lexbuf.Lexing.lex_start_pos lexbuf.Lexing.lex_curr_pos in
-# 57 "lib/lexer.mll"
+# 58 "lib/lexer.mll"
                          ( keyword_or_ident id )
-# 232 "lib/lexer.ml"
+# 233 "lib/lexer.ml"
 
   | 6 ->
-# 59 "lib/lexer.mll"
+# 60 "lib/lexer.mll"
                          ( DOT )
-# 237 "lib/lexer.ml"
+# 238 "lib/lexer.ml"
 
   | 7 ->
-# 60 "lib/lexer.mll"
+# 61 "lib/lexer.mll"
                          ( COMMA )
-# 242 "lib/lexer.ml"
+# 243 "lib/lexer.ml"
 
   | 8 ->
-# 61 "lib/lexer.mll"
+# 62 "lib/lexer.mll"
                          ( SEMI )
-# 247 "lib/lexer.ml"
+# 248 "lib/lexer.ml"
 
   | 9 ->
-# 62 "lib/lexer.mll"
+# 63 "lib/lexer.mll"
                          ( LPAR )
-# 252 "lib/lexer.ml"
+# 253 "lib/lexer.ml"
 
   | 10 ->
-# 63 "lib/lexer.mll"
+# 64 "lib/lexer.mll"
                          ( RPAR )
-# 257 "lib/lexer.ml"
+# 258 "lib/lexer.ml"
 
   | 11 ->
-# 64 "lib/lexer.mll"
+# 65 "lib/lexer.mll"
                          ( BEGIN )
-# 262 "lib/lexer.ml"
+# 263 "lib/lexer.ml"
 
   | 12 ->
-# 65 "lib/lexer.mll"
+# 66 "lib/lexer.mll"
                          ( END )
-# 267 "lib/lexer.ml"
+# 268 "lib/lexer.ml"
 
   | 13 ->
-# 68 "lib/lexer.mll"
+# 69 "lib/lexer.mll"
                          ( MINUS )
-# 272 "lib/lexer.ml"
+# 273 "lib/lexer.ml"
 
   | 14 ->
-# 69 "lib/lexer.mll"
+# 70 "lib/lexer.mll"
                          ( NOT )
-# 277 "lib/lexer.ml"
+# 278 "lib/lexer.ml"
 
   | 15 ->
-# 70 "lib/lexer.mll"
+# 71 "lib/lexer.mll"
                          ( PLUS )
-# 282 "lib/lexer.ml"
+# 283 "lib/lexer.ml"
 
   | 16 ->
-# 71 "lib/lexer.mll"
+# 72 "lib/lexer.mll"
                          ( TIMES )
-# 287 "lib/lexer.ml"
+# 288 "lib/lexer.ml"
 
   | 17 ->
-# 72 "lib/lexer.mll"
+# 73 "lib/lexer.mll"
                          ( DIVIDES )
-# 292 "lib/lexer.ml"
+# 293 "lib/lexer.ml"
 
   | 18 ->
-# 73 "lib/lexer.mll"
+# 74 "lib/lexer.mll"
                          ( MODULO )
-# 297 "lib/lexer.ml"
+# 298 "lib/lexer.ml"
 
   | 19 ->
-# 74 "lib/lexer.mll"
+# 75 "lib/lexer.mll"
                          ( EQUALS )
-# 302 "lib/lexer.ml"
+# 303 "lib/lexer.ml"
 
   | 20 ->
-# 75 "lib/lexer.mll"
+# 76 "lib/lexer.mll"
                          ( NOT_EQUALS )
-# 307 "lib/lexer.ml"
+# 308 "lib/lexer.ml"
 
   | 21 ->
-# 76 "lib/lexer.mll"
+# 77 "lib/lexer.mll"
                          ( LESS )
-# 312 "lib/lexer.ml"
+# 313 "lib/lexer.ml"
 
   | 22 ->
-# 77 "lib/lexer.mll"
+# 78 "lib/lexer.mll"
                          ( LESS_EQUALS )
-# 317 "lib/lexer.ml"
+# 318 "lib/lexer.ml"
 
   | 23 ->
-# 78 "lib/lexer.mll"
+# 79 "lib/lexer.mll"
                          ( GREATER )
-# 322 "lib/lexer.ml"
+# 323 "lib/lexer.ml"
 
   | 24 ->
-# 79 "lib/lexer.mll"
+# 80 "lib/lexer.mll"
                          ( GREATER_EQUALS )
-# 327 "lib/lexer.ml"
+# 328 "lib/lexer.ml"
 
   | 25 ->
-# 80 "lib/lexer.mll"
+# 81 "lib/lexer.mll"
                          ( AND )
-# 332 "lib/lexer.ml"
+# 333 "lib/lexer.ml"
 
   | 26 ->
-# 81 "lib/lexer.mll"
+# 82 "lib/lexer.mll"
                          ( OR )
-# 337 "lib/lexer.ml"
+# 338 "lib/lexer.ml"
 
   | 27 ->
-# 83 "lib/lexer.mll"
+# 84 "lib/lexer.mll"
                          ( SET )
-# 342 "lib/lexer.ml"
+# 343 "lib/lexer.ml"
 
   | 28 ->
-# 86 "lib/lexer.mll"
+# 87 "lib/lexer.mll"
                          ( failwith ("unknown character : " ^ lexeme lexbuf) )
-# 347 "lib/lexer.ml"
+# 348 "lib/lexer.ml"
 
   | 29 ->
-# 88 "lib/lexer.mll"
+# 89 "lib/lexer.mll"
                          ( EOF )
-# 352 "lib/lexer.ml"
+# 353 "lib/lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_token_rec lexbuf __ocaml_lex_state
@@ -358,19 +359,19 @@ and comment lexbuf =
 and __ocaml_lex_comment_rec lexbuf __ocaml_lex_state =
   match Lexing.engine __ocaml_lex_tables __ocaml_lex_state lexbuf with
       | 0 ->
-# 91 "lib/lexer.mll"
+# 92 "lib/lexer.mll"
                          ( () )
-# 364 "lib/lexer.ml"
+# 365 "lib/lexer.ml"
 
   | 1 ->
-# 92 "lib/lexer.mll"
+# 93 "lib/lexer.mll"
                          ( comment lexbuf )
-# 369 "lib/lexer.ml"
+# 370 "lib/lexer.ml"
 
   | 2 ->
-# 93 "lib/lexer.mll"
+# 94 "lib/lexer.mll"
                          ( failwith "unterminated comment" )
-# 374 "lib/lexer.ml"
+# 375 "lib/lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
       __ocaml_lex_comment_rec lexbuf __ocaml_lex_state

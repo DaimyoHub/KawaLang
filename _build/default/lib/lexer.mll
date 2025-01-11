@@ -26,6 +26,7 @@
           "while",     WHILE;
           "return",    RETURN;
           "method",    METHOD;
+          "extends",   EXTENDS
         ];
       fun s ->
         try  Hashtbl.find h s

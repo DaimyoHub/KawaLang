@@ -3,40 +3,41 @@ open Abstract_syntax
 open Type
 
 type sym_res_err_kind = 
-  | Class_not_found     of symbol
-  | Loc_not_found       of symbol
-  | Class_without_ctor  of symbol
-  | Method_not_in_class of symbol * symbol
-  | Not_loc             of symbol
+  | Class_not_found             of symbol
+  | Loc_not_found               of symbol
+  | Class_without_ctor          of symbol
+  | Method_not_in_class         of symbol * symbol
+  | Not_loc
+  | Attribute_not_found         of symbol * symbol
   | Diff_locs_same_sym
 
 
 type typ_err_kind =
-    Sym_res_err             of sym_res_err_kind
-  | Lhs_ill_typed           of expr
-  | Rhs_ill_typed           of expr
-  | Expr_ill_typed          of expr
-  | Cond_not_bool           of expr
+    Sym_res_err                 of sym_res_err_kind
+  | Lhs_ill_typed               of expr
+  | Rhs_ill_typed               of expr
+  | Expr_ill_typed              of expr
+  | Cond_not_bool               of expr
   | Void_method_return
   | Typed_method_not_return
-  | Set_ill_typed           of symbol * expr
-  | Print_not_int           of expr
-  | Unexpected_args         of symbol
-  | Expected_args           of symbol
-  | Arg_ill_typed           of symbol * expr
-  | Loc_type_not_user_def   of symbol 
-  | Unexpected_type         of expr
-  | Expected_void_instr     of instr
-  | Ill_typed               of instr
+  | Set_ill_typed               of symbol * expr
+  | Print_not_int               of expr
+  | Unexpected_args             of symbol
+  | Expected_args               of symbol
+  | Arg_ill_typed               of symbol * expr
+  | Loc_type_not_user_def       of symbol 
+  | Unexpected_type             of expr
+  | Expected_void_instr         of instr
+  | Ill_typed                   of instr
   | Branches_not_return_same
-  | Not_obj_inst            of symbol * symbol
+  | Not_obj_inst                of symbol * symbol
   | Already_returned
-  | Method_ill_typed        of symbol
+  | Method_ill_typed            of symbol
   | Dead_code
-  | Class_type_not_exist    of symbol
+  | Class_type_not_exist        of symbol
   | Return_bad_type
-  | If_branch_ill_typed     of bool
-  | Set_ill_typed_without_info of symbol
+  | If_branch_ill_typed         of bool
+  | Set_ill_typed_without_info  of symbol
   | If_stmt_may_return
 
 
@@ -64,15 +65,17 @@ let pprint_symbol_resolv err =
     Class_not_found (Sym s) ->
       fmt "Symbol '%s' does not correspond to a class.\n" s
   | Loc_not_found (Sym s) ->
-      fmt "Symbol '%s' does not correspond to any variable or attribute.\n" s
+      fmt "Symbol '%s' does not correspond to any location.\n" s
   | Class_without_ctor (Sym s) ->
       fmt "Constructor of the class '%s' is not defined.\n" s
   | Method_not_in_class (Sym c, Sym m) ->
       fmt "Method '%s' is not defined in class '%s'.\n" m c
-  | Not_loc _ ->
-      fmt "Expression does not correspond to variable nor attribute\n"
+  | Not_loc ->
+      fmt "Expression does not correspond to any location.\n"
   | Diff_locs_same_sym ->
-      fmt "Different locals have the same symbol.\n"
+      fmt "A symbol references two different locals.\n"
+  | Attribute_not_found (Sym o, Sym s) ->
+      fmt "Attribute '%s' of object '%s' was not found.\n" o s
 
 let pprint rep =
   let fmt = Printf.sprintf in
@@ -95,7 +98,7 @@ let pprint rep =
   | Typed_method_not_return ->
       "Typed method should return.\n"
   | Set_ill_typed (Sym s, _) ->
-      fmt "Cannot set variable '%s' typed as %s with a value of type %s.\n" s
+      fmt "Cannot set location '%s' typed as %s with a value of type %s.\n" s
         (ttos rep.expected) (ttos rep.obtained)
   | Print_not_int _ ->
       "Argument of print is not of type int.\n"
@@ -107,9 +110,9 @@ let pprint rep =
       fmt "Argument type (%s) does not correspond to parameter type (%s) of %s method.\n"
         (ttos rep.obtained) (ttos rep.expected) s
   | Loc_type_not_user_def (Sym s) ->
-      fmt "Variable %s is not an object.\n" s
+      fmt "Location %s is not an object.\n" s
   | Unexpected_type _ ->
-      "Unexpected type : "
+      "Unexpected type.\n"
   | Expected_void_instr _ ->
       "Expected void instruction.\n"
   | Ill_typed _ ->
@@ -117,7 +120,7 @@ let pprint rep =
   | Branches_not_return_same ->
       "Both branches of an if statement must be given the same type.\n"
   | Not_obj_inst (Sym loc_sym, Sym cls_sym) ->
-      fmt "Cannot instanciate class '%s' with the variable '%s' not typed as '%s'.\n"
+      fmt "Cannot instanciate class '%s' with the location '%s' not typed as '%s'.\n"
         cls_sym loc_sym cls_sym
   | Already_returned ->
       fmt "Found multiple sequential return statements for a same method.\n"
@@ -135,7 +138,7 @@ let pprint rep =
       fmt "Conditional statement %s branch is ill typed.\n"
         (if b then "first" else "second")
   | Set_ill_typed_without_info (Sym name) ->
-      fmt "Unable to set variable '%s' : RHS operand is ill typed.\n" name
+      fmt "Unable to set location '%s' : RHS operand is ill typed.\n" name
   | If_stmt_may_return ->
       fmt "Conditional statement only returns in one branch.\n"
 

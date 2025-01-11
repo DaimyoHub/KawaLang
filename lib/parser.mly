@@ -22,6 +22,7 @@
 %token THIS
 %token NEW
 %token METHOD
+%token EXTENDS
 
 %token PLUS MINUS TIMES DIVIDES MODULO 
 %token AND OR NOT
@@ -55,9 +56,6 @@
 
 %%
 
-var_decl:
-| VAR t=typ name=IDENT SEMI { { sym = Sym name; typ = t; data = No_data } }
-
 program:
 | glb=list(var_decl) cls=list(class_def) MAIN BEGIN main=list(instr) END EOF
     {{
@@ -84,23 +82,31 @@ typ:
 | name=IDENT { Cls (Sym name) }
 ;
 
+var_decl:
+| VAR t=typ name=IDENT SEMI { { sym = Sym name; typ = t; data = No_data } }
+;
+
 attr_decl:
 | ATTR t=typ name=IDENT SEMI { { sym = Sym name; typ = t; data = No_data } }
 ;
 
-param_def:
-| t=typ name=IDENT COMMA others=param_def
-    { (Sym name, { sym = Sym name; typ = t; data = No_data }) :: others }
-| t=typ name=IDENT
-    { [Sym name, { sym = Sym name; typ = t; data = No_data }] }
+param:
+| t=typ name=IDENT { Sym name, { sym = Sym name; typ = t; data = No_data } }
+
+params:
+| LPAR al=separated_list(COMMA, param) RPAR { List.rev al }
 ;
 
 method_def:
-| METHOD t=typ name=IDENT LPAR params=param_def RPAR BEGIN locals=list(var_decl) code=list(instr) END
+| METHOD t=typ name=IDENT ps=option(params) BEGIN locals=list(var_decl) code=list(instr) END
     {{
       sym = Sym name;
       ret_typ = t;
-      params = List.rev params;
+      params = (
+        match ps with
+          None -> []
+        | Some l -> l
+      );
       locals = 
         List.fold_left (
           fun acc x ->
@@ -109,24 +115,14 @@ method_def:
         ) (Env.create ()) locals;
       code = code
     }}
-| METHOD t=typ name=IDENT LPAR RPAR BEGIN locals=list(var_decl) code=list(instr) END
-    {{
-      sym = Sym name;
-      ret_typ = t;
-      params = [];
-      locals = 
-        List.fold_left (
-          fun acc x ->
-            Env.add acc x.sym x;
-            acc
-        ) (Env.create ()) locals;
-      code = code
-    }}
+;
 
+super:
+| EXTENDS super=IDENT { super }
 ;
 
 class_def:
-| CLASS name=IDENT BEGIN attrs=list(attr_decl) meths=list(method_def) END
+| CLASS name=IDENT s=option(super) BEGIN attrs=list(attr_decl) meths=list(method_def) END
     {{
       sym   = Sym name;
       attrs =
@@ -140,7 +136,12 @@ class_def:
           fun acc (x : method_def) ->
             MethodTable.add acc x.sym x;
             acc
-        ) (MethodTable.create ()) meths
+        ) (MethodTable.create ()) meths;
+      super = (
+        match s with
+          None -> None
+        | Some s -> Some (Sym s)
+      )
     }}
 
 (* ADD ATTR SET *)
@@ -148,11 +149,11 @@ instr:
 | PRINT LPAR e=expr RPAR SEMI
     { Print(e) }
 | name=IDENT SET e=expr SEMI
-    { Set (Sym name, e) }
+    { Set (Loc (Sym name), e) }
 | THIS DOT attr=IDENT SET e=expr SEMI
-    { Set (Sym ("this." ^ attr), e) }
+    { Set (Attr (Sym "this", Sym attr), e) }
 | obj=IDENT DOT attr=IDENT SET e=expr SEMI
-    { Set (Sym (obj ^ "." ^ attr), e) }
+    { Set (Attr (Sym obj, Sym attr), e) }
 | IF LPAR cond=expr RPAR BEGIN is1=list(instr) END ELSE BEGIN is2=list(instr) END
     { If (cond, is1, is2) }
 | WHILE LPAR cond=expr RPAR BEGIN seq=list(instr) END
@@ -177,13 +178,13 @@ expr:
 | THIS DOT attr_or_meth=IDENT args=option(args)
     {
       match args with
-        None   -> Loc (Sym ("this." ^ attr_or_meth))
+        None   -> Attr (Sym "this", Sym attr_or_meth)
       | Some l -> Call (Sym "this", Sym attr_or_meth, l)     
     }
 | obj=IDENT DOT attr_or_meth=IDENT args=option(args) 
     {
       match args with
-        None   -> Loc (Sym (obj ^ "." ^ attr_or_meth))
+        None   -> Attr (Sym obj, Sym attr_or_meth)
       | Some l -> Call (Sym obj, Sym attr_or_meth, l)
     }
 
@@ -205,6 +206,6 @@ expr:
 | lhs=expr      OR     rhs=expr                     { Dis (lhs, rhs) }
 | NOT e=expr                                        { Not e }
 
-| NEW name=IDENT args=args                          { Inst (Sym name, args) }
+| NEW name=IDENT LPAR al=separated_list(COMMA, expr) RPAR { Inst (Sym name, al) }
 ;
 
