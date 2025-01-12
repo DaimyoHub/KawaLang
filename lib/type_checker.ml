@@ -97,6 +97,7 @@ and check_method ctx (class_def : class_def) method_def =
   ) (Env.create ()) method_def.params
   in
   let env = Env.merge [method_def.locals; mapped_params] in
+
   match env with
     Some env -> (
       let _ = Env.add env (Sym "this")
@@ -161,6 +162,7 @@ and type_call ctx env sym ret_typ args params =
       fun acc (_, v) -> v.typ :: acc
     ) [] params
   in
+
   let rec aux args param_ts =
     match args, param_ts with
       [], [] -> Ok ret_typ
@@ -185,6 +187,7 @@ and check_instr ctx env exp instr =
   let chk = check ctx env 
   and chs = check_seq ctx env
   in
+
   match instr with
     Print e -> (
       match chk e Int with
@@ -192,6 +195,7 @@ and check_instr ctx env exp instr =
       | Error rep -> report (Some Int) (rep.obtained) (Print_not_int e)
     )
   | Set (loc, Inst (class_symbol, args)) -> 
+
       let* t = get_location_type ctx env loc in (
         match t with
           Cls class_symbol ->
@@ -211,7 +215,6 @@ and check_instr ctx env exp instr =
           else
             report (Some t) rep.obtained (Set_ill_typed (sym, e))
     )
-
   | If (_, _, _) -> check_if_statement ctx env exp instr
   | While (cond, is) -> (
       match chk cond Bool with
@@ -230,20 +233,24 @@ and check_instr ctx env exp instr =
  * sentence "an if statement is well typed" in my programming report (see README.md).
  *)
 and check_if_statement ctx env exp instr =
+
   let rec check_branch flag seq exp =
     match seq with
       [] -> Ok Void
+
     | [Ret e] -> (
         match check ctx env e exp with
           Ok _ -> Ok exp
         | Error rep -> report (Some exp) rep.obtained Return_bad_type
       )
+
     | Ret e :: s ->
         let _ = check_branch flag s exp and _ = report None None Dead_code in (
           match check ctx env e exp with
             Ok _ -> Ok exp
           | Error rep -> report (Some exp) rep.obtained Return_bad_type
         )
+
     | instr :: s -> (
         match check_instr ctx env exp instr with
           Ok Void -> check_branch flag s exp
@@ -288,11 +295,13 @@ and check_seq ctx env exp seq =
         Ok Void
       else
         report None None Typed_method_not_return
+
   | [Ret e] ->
       if exp <> Void then 
         let* t = check ctx env e exp in Ok t
       else
         report (Some Void) None Void_method_return
+
   | Ret e :: s ->
       let _ = check_seq ctx env exp s and _ = report None None Dead_code in (
         match check ctx env e exp with
@@ -300,12 +309,14 @@ and check_seq ctx env exp seq =
         | Error rep ->
             report (Some exp) rep.obtained Return_bad_type
       )
+
   | If (c, s1, s2) :: s -> (
       match check_instr ctx env exp (If (c, s1, s2)) with
         Ok Void -> check_seq ctx env exp s
       | Ok _ -> check_seq ctx env Void s
       | Error rep -> let _ = check_seq ctx env exp s in propagate rep
     )
+
   | instr :: s -> (
       match check_instr ctx env Void instr with
         Ok _ -> check_seq ctx env exp s

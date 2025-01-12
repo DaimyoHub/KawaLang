@@ -121,6 +121,11 @@ at stake. Below is a list of such stakes and how I decided to deal with :
     make an if statement return the same type in both of its branchs, or to not make it return at all.
     For instance, the given codes report type errors
 
+> [!NOTE]
+> It was nice to remark that the typechecker is an actual kind of reducted interpreter : we
+> clearly see that it evaluates a given program, but instead of working with real time values
+> it uses approximations of them (types).
+
 ```
 method int test() { /* error : method does not return well */
     if (cond) {
@@ -209,4 +214,41 @@ Below is a list of features provided by the type checker :
   - [x] Detect if the return type of a method correspond to returned values in its body.
   - [x] Detect if a branch of an if statement is ill typed.
 
-### Evaluator
+### Interpreter
+
+The interpreter mutates one's program environment reading its instructions. To perform
+the interpretation of instructions that produce side effects, it also evaluates underlying
+expressions contained in them.
+
+As in the type checker, some aspects of the interpreter development were decisive for the
+project design. Below is a list of the ones I dealt with :
+
+  - **Constructing a calling environment**
+    During the whole development of the type checker, I dealt with "linear environments",
+    more precisely, class instances were not seen as objects linked with an environment 
+    representing its attributes, but as simple variables, and to access their attributes,
+    I had to make them visible in the environement contaning the object.
+
+    example: if an environment contains an instance "p" of class point, we cannot access
+    the attribute "p.x" directly from the environment. We must "expand" p to make
+    its attributes visible.
+
+        env = ["p"]
+        get "p.x" from env : error
+
+        expand p in env :
+        env = ["p"; "p.x"; "p.y"]
+        get "p.x" from env : ok
+
+    This design is obviously expensive in memory, and time of environment construction, 
+    because we must expand each object of an environment to make their attributes visible.
+    Hence, I've decided to make fix this issue, making every attributes of an object
+    visible in an environment only containing the object.
+        
+        env = ["p"]
+        get "p.x" from env : ok
+
+    To perform it, I first look for the object in the given environment, then I try to
+    the wanted attribute in its table of attributes.
+
+
