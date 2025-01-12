@@ -1,2 +1,3 @@
 lexpar/
 _build/
+.ocamlformat

@@ -232,7 +232,7 @@ project design. Below is a list of the ones I dealt with :
     development.
 
     Example: 
-    *With expanding mecanism :*
+    *With expanding mecanism : *
     if an environment contains an instance "p" of class point,
     we cannot access the attribute "p.x" directly from the environment. We must "expand"
     p to make its attributes visible.
@@ -244,7 +244,7 @@ project design. Below is a list of the ones I dealt with :
         env = ["p"; "p.x"; "p.y"]
         get "p.x" from env : ok
 
-    *With a better design (without expanding)*
+    *With a better design (without expanding) : *
     Hence, I've decided to fix this issue, making every attributes of an object
     visible in an environment only containing the object.
         

@@ -4,229 +4,190 @@ open Symbol
 open Symbol_resolver
 open Type_error
 
+let ( let* ) res f = match res with Ok x -> f x | Error rep -> propagate rep
 
-let ( let* ) res f =
-  match res with
-    Ok x -> f x
-  | Error rep -> propagate rep
-
-
-type value = 
-    VInt  of int
-  | VBool of bool
-  | VObj  of Env.t
-  | VNull
-
+type value = VInt of int | VBool of bool | VObj of Env.t | VNull
 
 let value_to_data = function
-    VInt n -> Expr (Cst n)
+  | VInt n -> Expr (Cst n)
   | VBool b -> Expr (if b then True else False)
-  | VObj table -> (
+  | VObj table ->
       let mapped_table = Hashtbl.create 5 in
-      Env.iter (fun attr loc ->
-        Hashtbl.add mapped_table attr (loc.typ, loc.data)
-      ) table;
+      Env.iter
+        (fun attr loc -> Hashtbl.add mapped_table attr (loc.typ, loc.data))
+        table;
       Obj mapped_table
-    )
   | VNull -> No_data
 
-
-let rec eval_expr ctx env expr = 
-  let eao   = eval_arithmetic_op ctx env
-  and eco   = eval_comparison_op ctx env
-  and elo   = eval_logic_op      ctx env
-  and eexpr = eval_expr          ctx env
-  in
+let rec eval_expr ctx env expr =
+  let eao = eval_arithmetic_op ctx env
+  and eco = eval_comparison_op ctx env
+  and elo = eval_logic_op ctx env
+  and eexpr = eval_expr ctx env in
   match expr with
-    Cst n        -> VInt n
-  | True         -> VBool true
-  | False        -> VBool false
-  | Loc sym      -> eval_variable ctx env sym
-  | Attr (o, s)  -> eval_attribute ctx env o s
-  | This         -> eval_variable ctx env (Sym "this") 
+  | Cst n -> VInt n
+  | True -> VBool true
+  | False -> VBool false
+  | Loc sym -> eval_variable ctx env sym
+  | Attr (o, s) -> eval_attribute ctx env o s
+  | This -> eval_variable ctx env (Sym "this")
   | Add (e1, e2) -> eao e1 e2 ( + )
   | Mul (e1, e2) -> eao e1 e2 ( * )
   | Div (e1, e2) -> eao e1 e2 ( / )
-  | Mod (e1, e2) -> eao e1 e2 (mod)
+  | Mod (e1, e2) -> eao e1 e2 ( mod )
   | Min (e1, e2) -> eao e1 e2 ( - )
   | Neg e -> (
       match eexpr e with
-        VInt n -> VInt (- n)
-      | _ -> failwith "Unreachable : neg expr is ill-typed"
-    )
-
+      | VInt n -> VInt (-n)
+      | _ -> failwith "Unreachable : neg expr is ill-typed")
   (* Equality operations *)
-  | Eq  (e1, e2) -> eval_equality_op ctx env e1 e2 true
+  | Eq (e1, e2) -> eval_equality_op ctx env e1 e2 true
   | Neq (e1, e2) -> eval_equality_op ctx env e1 e2 false
   | Lne (e1, e2) -> eco e1 e2 ( < )
-  | Leq (e1, e2) -> eco e1 e2 (<= )
+  | Leq (e1, e2) -> eco e1 e2 ( <= )
   | Gne (e1, e2) -> eco e1 e2 ( > )
-  | Geq (e1, e2) -> eco e1 e2 (>= )
-
-  | Con (e1, e2) -> elo e1 e2 (&& )
-  | Dis (e1, e2) -> elo e1 e2 (|| )
+  | Geq (e1, e2) -> eco e1 e2 ( >= )
+  | Con (e1, e2) -> elo e1 e2 ( && )
+  | Dis (e1, e2) -> elo e1 e2 ( || )
   | Not e -> (
       match eexpr e with
-        VBool b -> VBool (b = false)
-      | _ -> failwith "Unreachable : not expr is ill-typed"
-    )
-
-  | Inst (_, _) -> (
-      VNull
-    )
+      | VBool b -> VBool (b = false)
+      | _ -> failwith "Unreachable : not expr is ill-typed")
+  | Inst (_, _) -> VNull
   | Call (_, _, _) -> failwith "TODO"
 
-
 and eval_equality_op ctx env e1 e2 op =
-  match eval_expr ctx env e1, eval_expr ctx env e2 with
-    VInt a,  VInt b  -> VBool (a = b)
+  match (eval_expr ctx env e1, eval_expr ctx env e2) with
+  | VInt a, VInt b -> VBool (a = b)
   | VBool a, VBool b -> VBool (a = b)
-  | VNull,   VNull   -> VBool true
+  | VNull, VNull -> VBool true
   | VObj a1, VObj a2 ->
       let res = ref true in
-      Env.iter (fun k v1 ->
-        match Env.get a2 k with
-          Some v2 -> 
-            if is_same_value ctx env
+      Env.iter
+        (fun k v1 ->
+          match Env.get a2 k with
+          | Some v2 ->
+              if
+                is_same_value ctx env
                   (eval_data ctx env v1.data)
-                  (eval_data ctx env v2.data) <> op
-            then
-              res := false
-        | None -> ()
-      ) a1;
+                  (eval_data ctx env v2.data)
+                <> op
+              then res := false
+          | None -> ())
+        a1;
       VBool !res
   | _ -> failwith "Unreachable : eq expr is ill typed"
 
-
 and eval_arithmetic_op ctx env e1 e2 (op : int -> int -> int) =
-  let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in (
-    match v1, v2 with
-      VInt a, VInt b -> VInt (op a b)
-    | _ -> failwith "Unreachable : bin op expr is ill-typed"
-  )
-
+  let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
+  match (v1, v2) with
+  | VInt a, VInt b -> VInt (op a b)
+  | _ -> failwith "Unreachable : bin op expr is ill-typed"
 
 and eval_comparison_op ctx env e1 e2 op =
-  let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in (
-    match v1, v2 with
-      VInt a,  VInt b  -> VBool (op a b)
-    | _ -> failwith "Unreachable : bin op expr is ill-typed"
-  )
-
+  let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
+  match (v1, v2) with
+  | VInt a, VInt b -> VBool (op a b)
+  | _ -> failwith "Unreachable : bin op expr is ill-typed"
 
 and eval_logic_op ctx env e1 e2 op =
-  let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in (
-    match v1, v2 with
-      VBool a,  VBool b  -> VBool (op a b)
-    | _ -> failwith "Unreachable : bin op expr is ill-typed"
-  )
-
+  let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
+  match (v1, v2) with
+  | VBool a, VBool b -> VBool (op a b)
+  | _ -> failwith "Unreachable : bin op expr is ill-typed"
 
 and eval_variable ctx env sym =
   eval_data ctx env (Result.get_ok @@ get_variable_data ctx env sym)
 
-
 and eval_attribute ctx env obj_sym attr_sym =
-  eval_data ctx env (Result.get_ok @@ get_attribute_data ctx env obj_sym attr_sym)
-
+  eval_data ctx env
+    (Result.get_ok @@ get_attribute_data ctx env obj_sym attr_sym)
 
 and is_same_value ctx env v1 v2 =
-  match v1, v2 with
-    VNull, VNull -> true
+  match (v1, v2) with
+  | VNull, VNull -> true
   | VBool a, VBool b -> a = b
   | VInt a, VInt b -> a = b
   | VObj a, VObj b ->
       let res = ref true in
-      Env.iter (fun k v1 ->
-        match Env.get b k with
-          Some v2 -> 
-            if is_same_value ctx env
+      Env.iter
+        (fun k v1 ->
+          match Env.get b k with
+          | Some v2 ->
+              if
+                is_same_value ctx env
                   (eval_data ctx env v1.data)
                   (eval_data ctx env v2.data)
-            then
-              res := false
-        | None -> ()
-      ) a;
+              then res := false
+          | None -> ())
+        a;
       !res
   | _ -> failwith "Unreachable : eq expr is ill typed"
 
-
 and eval_data ctx env data =
   match data with
-    Obj attrs -> (
+  | Obj attrs ->
       let mapped_attrs = Env.create () in
-      Hashtbl.iter (fun attr (typ, data) ->
-        Env.add mapped_attrs attr { typ = typ; data = data; sym = attr }
-      ) attrs;
+      Hashtbl.iter
+        (fun attr (typ, data) ->
+          Env.add mapped_attrs attr { typ; data; sym = attr })
+        attrs;
       VObj mapped_attrs
-    )
   | Expr expr -> eval_expr ctx env expr
   | No_data -> VNull
 
-
 and exec_seq ctx env seq =
   match seq with
-    [] -> VNull
+  | [] -> VNull
   | instr :: s -> (
-      match exec_instr ctx env instr with
-        VNull -> exec_seq ctx env s
-      | v -> v
-    )
-
+      match exec_instr ctx env instr with VNull -> exec_seq ctx env s | v -> v)
 
 and value_to_string ctx env = function
-    VNull    -> "null"
-  | VInt n   -> Printf.sprintf "%d" n
-  | VBool b  -> Printf.sprintf "%s" (if b then "true" else "false")
-  | VObj obj -> (
+  | VNull -> "null"
+  | VInt n -> Printf.sprintf "%d" n
+  | VBool b -> Printf.sprintf "%s" (if b then "true" else "false")
+  | VObj obj ->
       let res = "{\n" in
-      Env.iter (fun (Sym name) v ->
-        let sdata = value_to_string ctx env (eval_data ctx env v.data) in
-        let _ = res ^ Printf.sprintf "\t%s -> %s\n" name sdata in ()
-      ) obj;
+      Env.iter
+        (fun (Sym name) v ->
+          let sdata = value_to_string ctx env (eval_data ctx env v.data) in
+          let _ = res ^ Printf.sprintf "\t%s -> %s\n" name sdata in
+          ())
+        obj;
       res ^ "}"
-    )
-
 
 and exec_instr ctx env instr =
   match instr with
-    Print e -> (
+  | Print e ->
       print_endline (value_to_string ctx env (eval_expr ctx env e));
       VNull
-    )
   | If (cond, s1, s2) -> (
       match eval_expr ctx env cond with
-        VBool b ->
-          if b then exec_seq ctx env s1 else exec_seq ctx env s2
-      | _ -> failwith "Unreachable : condition is ill-typed"
-    )
+      | VBool b -> if b then exec_seq ctx env s1 else exec_seq ctx env s2
+      | _ -> failwith "Unreachable : condition is ill-typed")
   | While (cond, seq) -> (
       match eval_expr ctx env cond with
-        VBool b ->
+      | VBool b ->
           if b then
             let v = exec_seq ctx env seq in
-            if v = VNull then exec_instr ctx env instr
-            else v
+            if v = VNull then exec_instr ctx env instr else v
           else VNull
-      | _ -> failwith "Unreachable : condition is ill-typed"
-    )
+      | _ -> failwith "Unreachable : condition is ill-typed")
   | Set (loc, expr) -> (
-      let new_data = value_to_data (eval_expr ctx env expr) in 
+      let new_data = value_to_data (eval_expr ctx env expr) in
       let symbol = Result.get_ok @@ get_location_symbol loc in
       match Env.get ctx.globals symbol with
-        None -> (
+      | None -> (
           match Env.get env symbol with
-            None -> failwith "Unreachable : unable to find loc"
-          | Some v -> (
+          | None -> failwith "Unreachable : unable to find loc"
+          | Some v ->
               Env.add env symbol { typ = v.typ; sym = v.sym; data = new_data };
-              VNull
-            )
-        )
-      | Some v -> (
-          Env.add ctx.globals symbol { typ = v.typ; sym = v.sym; data = new_data };
-          VNull
-        )
-    )
+              VNull)
+      | Some v ->
+          Env.add ctx.globals symbol
+            { typ = v.typ; sym = v.sym; data = new_data };
+          VNull)
   | Ret e -> eval_expr ctx env e
-  | Ignore e -> let _ = eval_expr ctx env e in VNull
-
+  | Ignore e ->
+      let _ = eval_expr ctx env e in
+      VNull
