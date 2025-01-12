@@ -1,4 +1,5 @@
 var bar test;
+var int i;
 
 
 class t {
@@ -15,10 +16,12 @@ class foo extends t {
 
 class bar extends foo {
   method void b() {}
+
+  method void bar() {}
 }
 
 
 main {
-  print(test.x);
+  new bar() instanceof bar;
 }
 

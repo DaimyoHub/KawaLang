@@ -19,6 +19,9 @@ type expr =
   (* Equality operators *)
   | Eq of expr * expr
   | Neq of expr * expr
+  | StructEq of expr * expr
+  | StructNeq of expr * expr
+  | InstanceOf of expr * typ
   (* Comparison operators *)
   | Lne of expr * expr
   | Leq of expr * expr

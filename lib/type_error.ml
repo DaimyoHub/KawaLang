@@ -40,6 +40,8 @@ type typ_err_kind =
   | If_stmt_may_return
   | Type_not_defined of symbol
   | Super_class_not_defined of symbol
+  | Expected_object of symbol
+  | Expected_class_type
 
 type typ_err_report = {
   expected : typ option;
@@ -132,6 +134,10 @@ let pprint rep =
   | Type_not_defined (Sym s) -> fmt "Type %s was not defined.\n" s
   | Super_class_not_defined (Sym s) ->
       fmt "Super class %s is not defined.\n" s
+  | Expected_object (Sym s) ->
+      fmt "Expected location '%s' to be an object.\n" s
+  | Expected_class_type ->
+      fmt "Expected a class instead of type %s.\n" (ttos rep.obtained)
 
 let report exp obt kind =
   let rep = { expected = exp; obtained = obt; kind } in

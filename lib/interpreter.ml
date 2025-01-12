@@ -3,6 +3,7 @@ open Environment
 open Symbol
 open Symbol_resolver
 open Type_error
+open Type_checker
 
 let ( let* ) res f = match res with Ok x -> f x | Error rep -> propagate rep
 
@@ -41,8 +42,17 @@ let rec eval_expr ctx env expr =
       | VInt n -> VInt (-n)
       | _ -> failwith "Unreachable : neg expr is ill-typed")
   (* Equality operations *)
-  | Eq (e1, e2) -> eval_equality_op ctx env e1 e2 true
-  | Neq (e1, e2) -> eval_equality_op ctx env e1 e2 false
+  | Eq (e1, e2) -> eval_equality ctx env e1 e2 true
+  | Neq (e1, e2) -> eval_equality ctx env e1 e2 false
+  | StructEq (e1, e2) -> eval_structural_equality_op ctx env e1 e2 true
+  | StructNeq (e1, e2) -> eval_structural_equality_op ctx env e1 e2 false
+  | InstanceOf (e, t) -> (
+      (* Instead of redoing the whole type checker to make it change the AST,
+         I prefer to just type the expression e twice (in the type checker,
+         and in the interpreter). *)
+      match type_expr ctx env e with 
+      | Ok typ -> if t = typ then VBool true else VBool false
+      | Error _ -> failwith "Unreachable : expr is ill typed")
   | Lne (e1, e2) -> eco e1 e2 ( < )
   | Leq (e1, e2) -> eco e1 e2 ( <= )
   | Gne (e1, e2) -> eco e1 e2 ( > )
@@ -56,11 +66,25 @@ let rec eval_expr ctx env expr =
   | Inst (_, _) -> VNull
   | Call (_, _, _) -> failwith "TODO"
 
-and eval_equality_op ctx env e1 e2 op =
+and eval_equality ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
-  | VInt a, VInt b -> VBool (a = b)
-  | VBool a, VBool b -> VBool (a = b)
-  | VNull, VNull -> VBool true
+  | VInt a, VInt b -> VBool ((a = b) = op)
+  | VBool a, VBool b -> VBool ((a = b) = op)
+  | VNull, VNull -> VBool op
+  | VObj _, VObj _ -> (
+      match e1, e2 with
+      | Loc (Sym n1), Loc (Sym n2) -> VBool ((n1 = n2) = op)
+      | Attr (Sym o1, Sym a1), Attr (Sym o2, Sym a2) ->
+          VBool ((o1 = o2 && a1 = a2) = op)
+      | _, _ -> VBool (op = false)
+    )
+  | _ -> failwith "Unreachable : eq expr is ill typed"
+
+and eval_structural_equality_op ctx env e1 e2 op =
+  match (eval_expr ctx env e1, eval_expr ctx env e2) with
+  | VInt a, VInt b -> VBool ((a = b) = op)
+  | VBool a, VBool b -> VBool ((a = b) = op)
+  | VNull, VNull -> VBool op
   | VObj a1, VObj a2 ->
       let res = ref true in
       Env.iter

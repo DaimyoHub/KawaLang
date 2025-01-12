@@ -126,7 +126,7 @@ let get_attribute ctx env loc_sym attr_sym =
             allocate_then_get attrs loc
           with _ ->
             report_symbol_resolv (Attribute_not_found (loc_sym, attr_sym)))
-      | _, _ -> failwith "Incoherence type/data of loc.")
+      | _, _ -> report None (Some var.typ) (Expected_object var.sym))
   | Error rep -> propagate rep
 
 (*

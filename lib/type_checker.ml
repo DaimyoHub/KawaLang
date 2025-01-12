@@ -36,7 +36,7 @@ let rec type_expr ctx env expr =
       match check ctx env a Int with
       | Ok t -> Ok t
       | Error rep -> report (Some Int) rep.obtained (Expr_ill_typed a))
-  | Eq (e1, e2) | Neq (e1, e2) -> (
+  | Eq (e1, e2) | Neq (e1, e2) | StructEq (e1, e2) | StructNeq (e1, e2) -> (
       let* t = type_expr ctx env e1 in
       match check ctx env e2 t with
       | Ok _ -> Ok Bool
@@ -44,6 +44,12 @@ let rec type_expr ctx env expr =
           match rep.kind with
           | Sym_res_err _ -> propagate rep
           | _ -> report (Some t) rep.obtained (Rhs_ill_typed e2)))
+  | InstanceOf (e, t) -> (
+      match t with
+      | Cls class_symbol ->
+          let* _ = get_class ctx class_symbol in
+          let* _ = type_expr ctx env e in Ok Bool
+      | _ -> report None (Some t) Expected_class_type)
   | Geq (e1, e2) | Lne (e1, e2) | Gne (e1, e2) | Leq (e1, e2) ->
       tbo Int Bool e1 e2
   | Con (e1, e2) -> tbo Bool Bool e1 e2

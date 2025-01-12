@@ -9,24 +9,25 @@
     let h = Hashtbl.create 17 in
       List.iter (fun (s, k) -> Hashtbl.add h s k)
         [
-          "print",     PRINT;
-          "main",      MAIN;
-          "class",     CLASS;
-          "var",       VAR;
-          "attr",      ATTR;
-          "int",       INT;
-          "bool",      BOOL;
-          "void",      VOID;
-          "true",      TRUE;
-          "false",     FALSE;
-          "this",      THIS;
-          "new",       NEW;
-          "if",        IF;
-          "else",      ELSE;
-          "while",     WHILE;
-          "return",    RETURN;
-          "method",    METHOD;
-          "extends",   EXTENDS
+          "print",      PRINT;
+          "main",       MAIN;
+          "class",      CLASS;
+          "var",        VAR;
+          "attr",       ATTR;
+          "int",        INT;
+          "bool",       BOOL;
+          "void",       VOID;
+          "true",       TRUE;
+          "false",      FALSE;
+          "this",       THIS;
+          "new",        NEW;
+          "if",         IF;
+          "else",       ELSE;
+          "while",      WHILE;
+          "return",     RETURN;
+          "method",     METHOD;
+          "extends",    EXTENDS;
+          "instanceof", INSTANCEOF;
         ];
       fun s ->
         try  Hashtbl.find h s
@@ -74,6 +75,8 @@ rule token = parse
   | '%'                  { MODULO }
   | "=="                 { EQUALS }
   | "!="                 { NOT_EQUALS }
+  | "==="                { STRUCT_EQ }
+  | "!=="                { STRUCT_NEQ }
   | '<'                  { LESS }
   | "<="                 { LESS_EQUALS }
   | ">"                  { GREATER }
@@ -84,12 +87,12 @@ rule token = parse
   | "="                  { SET }
 
   (* Lexer cannot correctly parse the current lexbuf *)
-  | _                    { failwith ("unknown character : " ^ lexeme lexbuf) }
+  | _                    { failwith ("Unknown character : " ^ lexeme lexbuf) }
 
   | eof                  { EOF }
 
 and comment = parse
   | "*/"                 { () }
   | _                    { comment lexbuf }
-  | eof                  { failwith "unterminated comment" }
+  | eof                  { failwith "Unterminated comment" }
 

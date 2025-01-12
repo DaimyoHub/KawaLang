@@ -27,5 +27,3 @@ let _ =
         cls.meths)
     prog.classes;
 
-  Debug.print_env prog.globals;
-  let _ = Interpreter.exec_seq prog prog.globals prog.main in ()

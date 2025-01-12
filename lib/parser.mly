@@ -23,10 +23,11 @@
 %token NEW
 %token METHOD
 %token EXTENDS
+%token INSTANCEOF
 
 %token PLUS MINUS TIMES DIVIDES MODULO 
 %token AND OR NOT
-%token EQUALS NOT_EQUALS LESS LESS_EQUALS GREATER GREATER_EQUALS
+%token EQUALS NOT_EQUALS LESS LESS_EQUALS GREATER GREATER_EQUALS STRUCT_EQ STRUCT_NEQ
 
 %token LPAR RPAR BEGIN END SEMI
 %token COMMA
@@ -41,9 +42,10 @@
 %token SET
 %token <int> NUM
 
-%left NOT_EQUALS EQUALS LESS_EQUALS LESS GREATER GREATER_EQUALS
+%left NOT_EQUALS EQUALS LESS_EQUALS LESS GREATER GREATER_EQUALS STRUCT_EQ STRUCT_NEQ
 %left AND OR
 %left NOT
+%nonassoc INSTANCEOF
 %left MODULO
 %left MINUS
 %left PLUS
@@ -198,6 +200,9 @@ expr:
 
 | lhs=expr    EQUALS   rhs=expr                     { Eq  (lhs, rhs) }
 | lhs=expr  NOT_EQUALS rhs=expr                     { Neq (lhs, rhs) }
+| lhs=expr   STRUCT_EQ rhs=expr                     { StructEq(lhs, rhs) }
+| lhs=expr  STRUCT_NEQ rhs=expr                     { StructNeq(lhs, rhs) }
+| e=expr    INSTANCEOF t=typ                        { InstanceOf (e, t) } 
 | lhs=expr     LESS    rhs=expr                     { Lne (lhs, rhs) }
 | lhs=expr LESS_EQUALS rhs=expr                     { Leq (lhs, rhs) }
 | lhs=expr    GREATER  rhs=expr                     { Gne (lhs, rhs) }
