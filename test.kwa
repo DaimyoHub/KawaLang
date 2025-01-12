@@ -2,7 +2,7 @@ var bar test;
 var int i;
 
 
-class t {
+class r {
   attr int x;
 
   method int hoho() {
@@ -10,7 +10,7 @@ class t {
   }
 }
 
-class foo extends t {
+class foo extends r {
   method void a() {}
 }
 
@@ -22,6 +22,7 @@ class bar extends foo {
 
 
 main {
-  new bar() instanceof bar;
+  var foo x = cast (foo) test;
+  x.a();
 }
 

@@ -35,6 +35,8 @@ type expr =
   | Inst of symbol * expr list
   | Call of symbol * symbol * expr list
 
+  | Cast of expr * typ
+
 type instr =
   | Print of expr
   | Set of expr * expr

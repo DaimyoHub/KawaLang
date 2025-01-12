@@ -42,6 +42,7 @@ type typ_err_kind =
   | Super_class_not_defined of symbol
   | Expected_object of symbol
   | Expected_class_type
+  | Prohibited_cast
 
 type typ_err_report = {
   expected : typ option;
@@ -138,6 +139,9 @@ let pprint rep =
       fmt "Expected location '%s' to be an object.\n" s
   | Expected_class_type ->
       fmt "Expected a class instead of type %s.\n" (ttos rep.obtained)
+  | Prohibited_cast ->
+      fmt "Cast from type %s to type %s is prohibited.\n" (ttos rep.obtained)
+        (ttos rep.expected)
 
 let report exp obt kind =
   let rep = { expected = exp; obtained = obt; kind } in

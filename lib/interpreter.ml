@@ -65,6 +65,7 @@ let rec eval_expr ctx env expr =
       | _ -> failwith "Unreachable : not expr is ill-typed")
   | Inst (_, _) -> VNull
   | Call (_, _, _) -> failwith "TODO"
+  | Cast (_, _) -> failwith "TODO"
 
 and eval_equality ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with

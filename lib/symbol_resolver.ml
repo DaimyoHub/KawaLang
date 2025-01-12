@@ -21,6 +21,20 @@ let get_class ctx symbol =
   | None -> report_symbol_resolv (Class_not_found symbol)
   | Some cls -> Ok cls
 
+let is_super_class ctx final_super_sym class_sym =
+  let* _ = get_class ctx final_super_sym in
+  let Sym fsn = final_super_sym in
+  let rec find_super class_sym =
+    let* cls = get_class ctx class_sym in
+    match cls.super with
+    | None -> Ok false
+    | Some (Sym super_name) -> (
+        if super_name = fsn then
+          Ok true
+        else find_super (Sym super_name))
+  in
+  find_super class_sym
+
 (*
  * get_method class_def symbol
  *
@@ -28,17 +42,20 @@ let get_class ctx symbol =
  * returns the method definition. If it does not, it reports a symbol resolving
  * error.
  *)
-let rec get_method ctx class_def symbol =
-  match MethodTable.get class_def.meths symbol with
-  | None -> (
-      match class_def.super with
-      | None -> report_symbol_resolv (Method_not_in_class (class_def.sym, symbol))
-      | Some super_symbol -> (
-          match get_class ctx super_symbol with
-          | Ok super_def -> get_method ctx super_def symbol
-          | Error _ ->
-              report None None (Super_class_not_defined super_symbol)))
-  | Some meth -> Ok meth
+let get_method ctx (class_def : class_def) symbol =
+  let rec get_method_in_super super_def =
+    match MethodTable.get super_def.meths symbol with
+    | None -> (
+        match super_def.super with
+        | None -> report_symbol_resolv (Method_not_in_class (class_def.sym, symbol))
+        | Some super_symbol -> (
+            match get_class ctx super_symbol with
+            | Ok super_def -> get_method_in_super super_def
+            | Error _ ->
+                report None None (Super_class_not_defined super_symbol)))
+    | Some meth -> Ok meth
+  in
+  get_method_in_super class_def
 
 (*
  * get_ctor_from_symbol ctx symbol

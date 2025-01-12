@@ -72,6 +72,17 @@ let rec type_expr ctx env expr =
           let* meth = get_method ctx cls callee in
           type_call ctx env callee meth.ret_typ args meth.params
       | _ -> report None (Some var_t) (Loc_type_not_user_def caller))
+  | Cast (expr, typ) -> (
+      match typ with
+      | Cls cast_cls_sym -> let* t = type_expr ctx env expr in (
+          match t with
+          | Cls expr_cls_sym ->
+              let* res = is_super_class ctx cast_cls_sym expr_cls_sym in
+              if res then 
+                Ok typ
+              else report None None Prohibited_cast
+          | _ -> report None None Expected_class_type)
+      | _ -> report None None Expected_class_type)
 
 (*
  * check_method context class_def method_def

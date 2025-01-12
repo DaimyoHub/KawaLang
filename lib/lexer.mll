@@ -28,6 +28,7 @@
           "method",     METHOD;
           "extends",    EXTENDS;
           "instanceof", INSTANCEOF;
+          "cast",       CAST
         ];
       fun s ->
         try  Hashtbl.find h s

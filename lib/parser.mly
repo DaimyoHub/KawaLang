@@ -24,6 +24,7 @@
 %token METHOD
 %token EXTENDS
 %token INSTANCEOF
+%token CAST
 
 %token PLUS MINUS TIMES DIVIDES MODULO 
 %token AND OR NOT
@@ -51,7 +52,6 @@
 %left PLUS
 %left DIVIDES
 %left TIMES
-
 
 %start program
 %type <prog_ctx> program
@@ -171,13 +171,10 @@ args:
 | LPAR al=separated_list(COMMA, expr) RPAR { al }
 ;
 
-expr:
-| LPAR e=expr RPAR                                  { e }
-| n=NUM                                             { Cst (n) }
-| TRUE                                              { True }
-| FALSE                                             { False }
+object_expr:
 | name=IDENT                                        { Loc (Sym name) }
 | THIS                                              { Loc (Sym "this") }
+| NEW name=IDENT LPAR al=separated_list(COMMA, expr) RPAR { Inst (Sym name, al) }
 | THIS DOT attr_or_meth=IDENT args=option(args)
     {
       match args with
@@ -190,7 +187,23 @@ expr:
         None   -> Attr (Sym obj, Sym attr_or_meth)
       | Some l -> Call (Sym obj, Sym attr_or_meth, l)
     }
+| c=cast_expr                                       { c }
+;
 
+cast_expr:
+| CAST LPAR t=typ RPAR e=object_expr                { Cast (e, t) }
+;
+
+paren_expr:
+| LPAR e=expr RPAR                                  { e }
+;
+
+expr:
+| n=NUM                                             { Cst (n) }
+| TRUE                                              { True }
+| FALSE                                             { False }
+| o=object_expr                                     { o }
+| e=paren_expr                                      { e }
 | lhs=expr     PLUS   rhs=expr                      { Add (lhs, rhs) }
 | lhs=expr    TIMES    rhs=expr                     { Mul (lhs, rhs) }
 | lhs=expr   DIVIDES   rhs=expr                     { Div (lhs, rhs) }
@@ -211,7 +224,5 @@ expr:
 | lhs=expr     AND     rhs=expr                     { Con (lhs, rhs) }
 | lhs=expr      OR     rhs=expr                     { Dis (lhs, rhs) }
 | NOT e=expr                                        { Not e }
-
-| NEW name=IDENT LPAR al=separated_list(COMMA, expr) RPAR { Inst (Sym name, al) }
 ;
 
