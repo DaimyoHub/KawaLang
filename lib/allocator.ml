@@ -17,7 +17,7 @@ let allocate_object_data ctx obj =
     Cls sym -> (
       match ClassTable.get ctx.classes sym with
         None ->
-          let _ = report_symbol_resolv (Class_not_found sym) in
+          let _ = silent_report_symbol_resolv (Class_not_found sym) in
           No_data
       | Some cls -> 
           let res = Hashtbl.create 5 in

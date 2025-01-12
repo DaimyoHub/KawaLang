@@ -1,0 +1,21 @@
+var int_list nil;
+var int_list test;
+
+class int_list {
+  attr int x;
+  attr int_list s;
+
+  method void int_list(int x, int_list s) {
+    this.x = s;
+    this.s = x;
+  }
+
+  method void boucle() {
+    this.s = this.s;
+    this.x = this.x;
+    this.x = this.s;
+  }
+}
+
+main {}
+

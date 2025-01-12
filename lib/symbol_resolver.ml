@@ -136,13 +136,27 @@ let get_location_symbol loc_kind =
  *)
 let get_variable_type ctx env sym =
   match get_variable ctx env sym with
-    Ok var -> Ok var.typ
+    Ok var -> (
+      match var.typ with
+        Cls class_sym ->
+          if Result.is_error @@ get_class_from_symbol ctx class_sym then
+            report None None (Type_not_defined class_sym)
+          else Ok var.typ
+      | _ -> Ok var.typ
+    )
   | Error rep -> propagate rep
 
 
 let get_attribute_type ctx env obj_sym attr_sym =
   match get_attribute ctx env obj_sym attr_sym with
-    Ok attr -> Ok attr.typ
+    Ok attr -> (
+      match attr.typ with
+        Cls class_sym ->
+          if Result.is_error @@ get_class_from_symbol ctx class_sym then
+            report None None (Type_not_defined class_sym)
+          else Ok attr.typ
+      | _ -> Ok attr.typ
+    )
   | Error rep -> propagate rep
 
 

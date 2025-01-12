@@ -6,12 +6,23 @@ class point {
   attr int y;
 
   method void point(point x, int y) {
-    
+    this.x = x;
+    this.y = 5;
+  }
+
+  method int sum() {
+    var point x;
+    var int xy;
+
+    x = this.x;
+    xy = x.y;
+    return xy + this.y;
   }
 }
 
 
 main {
   p = new point(p, 4);
+  print(p.sum());
 }
 

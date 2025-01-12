@@ -7,6 +7,12 @@ open Symbol
 open Type_error
 
 
+let ( let* ) res f =
+  match res with
+    Ok x -> f x
+  | Error rep -> propagate rep
+
+
 (*
  * type_expr context env expr
  * 
@@ -34,19 +40,17 @@ let rec type_expr ctx env expr =
           Ok t -> Ok t
         | Error rep -> report (Some Int) rep.obtained (Expr_ill_typed a)
       )
-    | Eq (e1, e2)  -> (
-        match type_expr ctx env e1 with
-          Ok t -> (
-            match check ctx env e2 t with
-              Ok _ -> Ok Bool
-            | Error rep -> (
-                match rep.kind with
-                  Sym_res_err _ -> propagate rep
-                | _ -> report (Some t) rep.obtained (Rhs_ill_typed e2)
-              )          )
-        | Error rep -> propagate rep
-      )
-    | Neq (e1, e2)
+    | Eq (e1, e2)
+    | Neq (e1, e2) -> 
+        let* t = type_expr ctx env e1 in (
+          match check ctx env e2 t with
+            Ok _ -> Ok Bool
+          | Error rep -> (
+              match rep.kind with
+                Sym_res_err _ -> propagate rep
+              | _ -> report (Some t) rep.obtained (Rhs_ill_typed e2)
+            )
+        )
     | Geq (e1, e2)
     | Lne (e1, e2)
     | Gne (e1, e2)
@@ -59,31 +63,26 @@ let rec type_expr ctx env expr =
         | Error rep -> report (Some Bool) rep.obtained (Expr_ill_typed a)
       )
 
-    | Inst (class_symbol, args) -> (
-        match get_ctor_from_symbol ctx class_symbol with
-          Ok ctor -> (
-            match type_call ctx env class_symbol Void args ctor.params with
-              Ok Void -> Ok (Cls class_symbol)
-            | Error rep -> propagate rep
-            | Ok _ -> failwith "Unreachable : ctor does not return type void"
-          )
-        | Error rep -> propagate rep
-      )
-    | Call (caller, callee, args) -> (
-        match get_variable_type ctx env caller with
-          Ok (Cls class_symbol) -> (
-            match get_class_from_symbol ctx class_symbol with
-              Ok cls -> (
-                match get_method_from_class cls callee with
-                  Ok meth -> type_call ctx env callee meth.ret_typ args meth.params
-                | Error rep -> propagate rep
-              )
-            | Error rep -> propagate rep
-          )
-        | Ok t -> 
-            report None (Some t) (Loc_type_not_user_def caller)
-        | Error rep -> propagate rep
-      )
+    | Inst (class_symbol, args) ->
+        let* ctor = get_ctor_from_symbol ctx class_symbol in (
+          match type_call ctx env class_symbol Void args ctor.params with
+            Ok Void -> Ok (Cls class_symbol)
+          | Error rep -> propagate rep
+          | Ok _ -> failwith "Unreachable : ctor does not return type void"
+        )
+    | Call (caller, callee, args) -> 
+        let* var_t = get_variable_type ctx env caller in (
+          match var_t with
+            Cls class_symbol -> (
+              let* cls = get_class_from_symbol ctx class_symbol in
+              let* meth = get_method_from_class cls callee in
+              type_call ctx env callee meth.ret_typ args meth.params
+            )
+          | _ -> 
+              report None (Some var_t) (Loc_type_not_user_def caller)
+        )
+          
+      
 
 
 (*
@@ -192,34 +191,27 @@ and check_instr ctx env exp instr =
         Ok _ -> Ok Void
       | Error rep -> report (Some Int) (rep.obtained) (Print_not_int e)
     )
-  | Set (loc, Inst (class_symbol, args)) -> (
-      match get_location_type ctx env loc with
-        Ok No_type -> failwith "TODO : type inference"
-      | Ok (Cls class_symbol) -> (
-          match chk (Inst (class_symbol, args)) (Cls class_symbol) with
-            Ok _ -> Ok Void
-          | Error rep -> propagate rep
-        )
-      | Ok t ->
-          let sym = Result.get_ok @@ get_location_symbol loc in
+  | Set (loc, Inst (class_symbol, args)) -> 
+      let* t = get_location_type ctx env loc in (
+        match t with
+          Cls class_symbol ->
+            let* _ = chk (Inst (class_symbol, args)) (Cls class_symbol) in
+            Ok Void
+        | _ -> 
+          let* sym = get_location_symbol loc in
           report (Some (Cls class_symbol)) (Some t) (Not_obj_inst (sym, class_symbol))
-      | Error rep -> propagate rep
+      ) 
+  | Set (loc, e) -> 
+    let* t = get_location_type ctx env loc in (
+      match chk e t with
+        Ok _ -> Ok Void
+      | Error rep -> let* sym = get_location_symbol loc in
+          if is_call_related_report rep then
+            report None None (Set_ill_typed_without_info sym)
+          else
+            report (Some t) rep.obtained (Set_ill_typed (sym, e))
     )
-  | Set (loc, e) -> (
-      match get_location_type ctx env loc with
-        Ok No_type -> failwith "TODO : type inference"
-      | Ok t -> (
-          match chk e t with
-            Ok _ -> Ok Void
-          | Error rep -> 
-              let sym = Result.get_ok @@ get_location_symbol loc in
-              if is_call_related_report rep then
-                report None None (Set_ill_typed_without_info sym)
-              else
-                report (Some t) rep.obtained (Set_ill_typed (sym, e))
-        )
-      | Error rep -> propagate rep
-    ) 
+
   | If (_, _, _) -> check_if_statement ctx env exp instr
   | While (cond, is) -> (
       match chk cond Bool with
@@ -228,11 +220,8 @@ and check_instr ctx env exp instr =
           report (Some Bool) rep.obtained (Cond_not_bool cond)
     )
   | Ret e -> chk e exp
-  | Ignore e -> (
-      match type_expr ctx env e with
-        Ok _ -> Ok Void
-      | Error rep -> propagate rep
-    )
+  | Ignore e -> let* _ = type_expr ctx env e in Ok Void
+
 
 (*
  * check_if_statement context env expected_type if_stmt
@@ -300,11 +289,9 @@ and check_seq ctx env exp seq =
       else
         report None None Typed_method_not_return
   | [Ret e] ->
-      if exp <> Void then (
-        match check ctx env e exp with
-          Ok t -> Ok t
-        | Error rep -> propagate rep
-      ) else
+      if exp <> Void then 
+        let* t = check ctx env e exp in Ok t
+      else
         report (Some Void) None Void_method_return
   | Ret e :: s ->
       let _ = check_seq ctx env exp s and _ = report None None Dead_code in (

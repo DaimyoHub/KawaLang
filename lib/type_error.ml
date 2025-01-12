@@ -39,6 +39,7 @@ type typ_err_kind =
   | If_branch_ill_typed         of bool
   | Set_ill_typed_without_info  of symbol
   | If_stmt_may_return
+  | Type_not_defined            of symbol
 
 
 type typ_err_report = {
@@ -49,13 +50,12 @@ type typ_err_report = {
 
 let ttos ot =
   match ot with
-    None -> "None"
+    None -> "unknown"
   | Some t -> (
       match t with
         Int -> "int"
       | Bool -> "bool"
       | Void -> "void"
-      | No_type -> "no type"
       | Cls (Sym s) -> s
     )
 
@@ -141,6 +141,8 @@ let pprint rep =
       fmt "Unable to set location '%s' : RHS operand is ill typed.\n" name
   | If_stmt_may_return ->
       fmt "Conditional statement only returns in one branch.\n"
+  | Type_not_defined (Sym s) ->
+      fmt "Type %s was not defined.\n" s
 
 let report exp obt kind =
   let rep = {
@@ -151,10 +153,21 @@ let report exp obt kind =
   print_string (pprint rep);
   Error rep
 
+let silent_report exp obt kind =
+  let rep = {
+    expected = exp;
+    obtained = obt;
+    kind = kind
+  } in
+  Error rep
+
 let propagate rep = Error rep
 
 let report_symbol_resolv err =
   report None None (Sym_res_err err)
+
+let silent_report_symbol_resolv err =
+  silent_report None None (Sym_res_err err)
 
 let is_call_related_report rep =
   match rep.kind with

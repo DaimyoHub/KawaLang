@@ -1,0 +1,26 @@
+var int_list nil;
+var int_list test;
+var foo pred;
+
+class int_list {
+  attr int x;
+  attr int_list s;
+
+  method void int_list(int x, int_list s) {
+    this.x = x;
+    this.s = s;
+  }
+}
+
+main {
+  test = new int_list(1,
+    new int_list(2,
+      new int_list(3,
+        new int_list(4, nil)
+      )
+    )
+  );
+
+  test = pred;
+}
+

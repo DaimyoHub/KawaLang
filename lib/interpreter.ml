@@ -2,7 +2,13 @@ open Abstract_syntax
 open Environment
 open Symbol
 open Symbol_resolver
-open Method
+open Type_error
+
+
+let ( let* ) res f =
+  match res with
+    Ok x -> f x
+  | Error rep -> propagate rep
 
 
 type value = 
@@ -50,19 +56,8 @@ let rec eval_expr ctx env expr =
     )
 
   (* Equality operations *)
-  | Eq  (e1, e2) -> (
-      match eexpr e1, eexpr e2 with
-        VInt a,  VInt b  -> VBool (a = b)
-      | VBool a, VBool b -> VBool (a = b)
-      | _ -> failwith "Unreachable : eq expr is ill typed"
-    )
-  | Neq (e1, e2) -> (
-      match eexpr e1, eexpr e2 with
-        VInt a,  VInt b  -> VBool (a <> b)
-      | VBool a, VBool b -> VBool (a <> b)
-      | _ -> failwith "Unreachable : eq expr is ill typed"
-    )
-
+  | Eq  (e1, e2) -> eval_equality_op ctx env e1 e2 true
+  | Neq (e1, e2) -> eval_equality_op ctx env e1 e2 false
   | Lne (e1, e2) -> eco e1 e2 ( < )
   | Leq (e1, e2) -> eco e1 e2 (<= )
   | Gne (e1, e2) -> eco e1 e2 ( > )
@@ -76,30 +71,31 @@ let rec eval_expr ctx env expr =
       | _ -> failwith "Unreachable : not expr is ill-typed"
     )
 
-  | Inst (class_sym, args) -> (
-      let class_def = Result.get_ok @@ get_class_from_symbol ctx class_sym in
-      let ctor_def = Result.get_ok @@ get_ctor_from_symbol ctx class_sym in
-      let calling_env = Option.get @@ make_interpreting_env ctx class_def None ctor_def args in
-      let _ = exec_seq ctx calling_env ctor_def.code in
-
-      (* After calling the ctor, we copy the object instanciated to return it *)
-      let res = Env.create () in
-
-      Env.iter (fun (Sym name) v ->
-        match String.split_on_char '.' name with
-          [this; attr] when this = "this" ->
-            Env.add res (Sym attr) { typ = v.typ; data = v.data; sym = Sym attr }
-        | _ -> ()
-      ) calling_env;
-
-      (* ICI IL FAUT METTRE À JOUR L'ENTIÈRETÉ DE L'ENVIRONNEMENT IN PLACE *)
-      (* ON RASSEMBLE LES ATTRIBUTS COMMUNS À UN OBJET *)
-      (* ON MET A JOUR LES LOCS SIMPLES *)
-      (* ON MET À JOUR LES OBJETS AVEC LE RASSEMBLEMENT FAIT JUSTE AVANT *)
-  
-      VObj res
+  | Inst (_, _) -> (
+      VNull
     )
   | Call (_, _, _) -> failwith "TODO"
+
+
+and eval_equality_op ctx env e1 e2 op =
+  match eval_expr ctx env e1, eval_expr ctx env e2 with
+    VInt a,  VInt b  -> VBool (a = b)
+  | VBool a, VBool b -> VBool (a = b)
+  | VNull,   VNull   -> VBool true
+  | VObj a1, VObj a2 ->
+      let res = ref true in
+      Env.iter (fun k v1 ->
+        match Env.get a2 k with
+          Some v2 -> 
+            if is_same_value ctx env
+                  (eval_data ctx env v1.data)
+                  (eval_data ctx env v2.data) <> op
+            then
+              res := false
+        | None -> ()
+      ) a1;
+      VBool !res
+  | _ -> failwith "Unreachable : eq expr is ill typed"
 
 
 and eval_arithmetic_op ctx env e1 e2 (op : int -> int -> int) =
@@ -132,6 +128,27 @@ and eval_variable ctx env sym =
 
 and eval_attribute ctx env obj_sym attr_sym =
   eval_data ctx env (Result.get_ok @@ get_attribute_data ctx env obj_sym attr_sym)
+
+
+and is_same_value ctx env v1 v2 =
+  match v1, v2 with
+    VNull, VNull -> true
+  | VBool a, VBool b -> a = b
+  | VInt a, VInt b -> a = b
+  | VObj a, VObj b ->
+      let res = ref true in
+      Env.iter (fun k v1 ->
+        match Env.get b k with
+          Some v2 -> 
+            if is_same_value ctx env
+                  (eval_data ctx env v1.data)
+                  (eval_data ctx env v2.data)
+            then
+              res := false
+        | None -> ()
+      ) a;
+      !res
+  | _ -> failwith "Unreachable : eq expr is ill typed"
 
 
 and eval_data ctx env data =
