@@ -1,33 +1,24 @@
-var point a;
-var point b;
+var bar test;
 
 
-class point {
+class t {
   attr int x;
-  attr int y;
 
-  method void point(int x, int y) {
-    this.x = x;
-    this.y = 5;
+  method int hoho() {
+    return 0;
   }
+}
+
+class foo extends t {
+  method void a() {}
+}
+
+class bar extends foo {
+  method void b() {}
 }
 
 
 main {
-  a.x = 4;
-  b.x = 4;
-  a.y = 3;
-  b.y = 5;
-
-  var int test = 6;
-  
-  if (test == 6) {
-    print(1);
-    var int hi = 2;
-  } else {
-    print(0);
-  } 
-
-  print(hi);
+  print(test.x);
 }
 

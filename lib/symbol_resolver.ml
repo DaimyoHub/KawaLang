@@ -11,26 +11,33 @@ let ( let* ) res f =
   | Error rep -> propagate rep
 
 (*
- * get_class_from_symbol context symbol
+ * get_class context symbol
  *
  * If the [symbol] does correspond to an existing class, it returns its
  * definition. If it does not, it reports a symbol resolving error.
  *)
-let get_class_from_symbol ctx symbol =
+let get_class ctx symbol =
   match ClassTable.get ctx.classes symbol with
   | None -> report_symbol_resolv (Class_not_found symbol)
   | Some cls -> Ok cls
 
 (*
- * get_method_from_class class_def symbol
+ * get_method class_def symbol
  *
  * If [symbol] does correspond to a method associated to [class_def], it
  * returns the method definition. If it does not, it reports a symbol resolving
  * error.
  *)
-let get_method_from_class class_def symbol =
+let rec get_method ctx class_def symbol =
   match MethodTable.get class_def.meths symbol with
-  | None -> report_symbol_resolv (Method_not_in_class (class_def.sym, symbol))
+  | None -> (
+      match class_def.super with
+      | None -> report_symbol_resolv (Method_not_in_class (class_def.sym, symbol))
+      | Some super_symbol -> (
+          match get_class ctx super_symbol with
+          | Ok super_def -> get_method ctx super_def symbol
+          | Error _ ->
+              report None None (Super_class_not_defined super_symbol)))
   | Some meth -> Ok meth
 
 (*
@@ -39,10 +46,10 @@ let get_method_from_class class_def symbol =
  * If [symbol] does correspond to an existing class, it returns its constructor's
  * definition. If it does not, it reports a symbol resolving error.
  *)
-let get_ctor_from_symbol ctx symbol =
-  match get_class_from_symbol ctx symbol with
+let get_ctor ctx symbol =
+  match get_class ctx symbol with
   | Ok cls -> (
-      match get_method_from_class cls symbol with
+      match get_method ctx cls symbol with
       | Ok ctor -> Ok ctor
       | Error rep -> propagate rep)
   | Error rep -> propagate rep
@@ -159,7 +166,7 @@ let get_variable_type ctx env symbol =
   | Ok var -> (
       match var.typ with
       | Cls class_sym ->
-          if Result.is_error @@ get_class_from_symbol ctx class_sym then
+          if Result.is_error @@ get_class ctx class_sym then
             report None None (Type_not_defined class_sym)
           else Ok var.typ
       | _ -> Ok var.typ)
@@ -178,7 +185,7 @@ let get_attribute_type ctx env obj_sym attr_sym =
   | Ok attr -> (
       match attr.typ with
       | Cls class_sym ->
-          if Result.is_error @@ get_class_from_symbol ctx class_sym then
+          if Result.is_error @@ get_class ctx class_sym then
             report None None (Type_not_defined class_sym)
           else Ok attr.typ
       | _ -> Ok attr.typ)
@@ -236,40 +243,30 @@ let get_location_data ctx env loc_kind =
   | _ -> report_symbol_resolv Not_loc
 
 (*
+ * get_method_return_type class_def method_symbol
+ *
+ * Gets the return type of the method associated to the given symbol if it 
+ * corresponds a a method of the given class definition.
+ *)
+let get_method_return_type ctx cls meth_sym =
+  match get_method ctx cls meth_sym with
+  | Error rep -> propagate rep
+  | Ok meth -> Ok meth.ret_typ
+
+(*
  * get_object_attributes ctx env symbol 
  *
  * If the given symbol does correspond to an object of the global variables or
  * to an object of the local environment, then it returns its attributes. If it
  * does not, it reports a symbol resolving error or a type error.
  *)
-let get_object_attributes ctx env symbol =
-  match get_variable ctx env symbol with
-  | Ok obj -> (
-      match obj.data with
-      | Obj attrs -> Ok attrs
-      | _ -> report None (Some obj.typ) (Loc_type_not_user_def obj.sym))
-  | Error rep -> propagate rep
-
-(*
- * get_method_return_type class_def method_symbol
- *
- * Gets the return type of the method associated to the given symbol if it 
- * corresponds a a method of the given class definition.
- *)
-let get_method_return_type cls meth_sym =
-  match get_method_from_class cls meth_sym with
-  | Error rep -> propagate rep
-  | Ok meth -> Ok meth.ret_typ
-
-(*
- * get_attributes ctx env object_symbol
- *)
-let get_attributes ctx env obj_sym =
-  let* obj = get_variable ctx env obj_sym in
+let get_attributes ctx env symbol =
+  let* obj = get_variable ctx env symbol in
   match obj.data with
   | Obj attrs -> 
       Ok (Hashtbl.fold (fun sym (typ, data) acc ->
         Env.add acc sym { sym = sym; typ = typ; data = data };
         acc
       ) attrs (Env.create ()))
-  | _ -> failwith "get_attributes : variable is not an object."
+  | _ -> report None (Some obj.typ) (Loc_type_not_user_def obj.sym)
+

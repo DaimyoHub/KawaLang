@@ -53,7 +53,7 @@ let rec type_expr ctx env expr =
       | Ok t -> Ok t
       | Error rep -> report (Some Bool) rep.obtained (Expr_ill_typed a))
   | Inst (class_symbol, args) -> (
-      let* ctor = get_ctor_from_symbol ctx class_symbol in
+      let* ctor = get_ctor ctx class_symbol in
       match type_call ctx env class_symbol Void args ctor.params with
       | Ok Void -> Ok (Cls class_symbol)
       | Error rep -> propagate rep
@@ -62,8 +62,8 @@ let rec type_expr ctx env expr =
       let* var_t = get_variable_type ctx env caller in
       match var_t with
       | Cls class_symbol ->
-          let* cls = get_class_from_symbol ctx class_symbol in
-          let* meth = get_method_from_class cls callee in
+          let* cls = get_class ctx class_symbol in
+          let* meth = get_method ctx cls callee in
           type_call ctx env callee meth.ret_typ args meth.params
       | _ -> report None (Some var_t) (Loc_type_not_user_def caller))
 

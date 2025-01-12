@@ -39,6 +39,7 @@ type typ_err_kind =
   | Set_ill_typed_without_info of symbol
   | If_stmt_may_return
   | Type_not_defined of symbol
+  | Super_class_not_defined of symbol
 
 type typ_err_report = {
   expected : typ option;
@@ -66,11 +67,11 @@ let pprint_symbol_resolv err =
   | Class_without_ctor (Sym s) ->
       fmt "Constructor of the class '%s' is not defined.\n" s
   | Method_not_in_class (Sym c, Sym m) ->
-      fmt "Method '%s' is not defined in class '%s'.\n" m c
+      fmt "Method '%s' is not defined in class %s.\n" m c
   | Not_loc -> fmt "Expression does not correspond to any location.\n"
   | Diff_locs_same_sym (Sym s) -> fmt "Symbol '%s' references multiple locations.\n" s
   | Attribute_not_found (Sym o, Sym s) ->
-      fmt "Attribute '%s' of object '%s' was not found.\n" o s
+      fmt "Attribute '%s' of object '%s' was not found.\n" s o
 
 let pprint rep =
   let fmt = Printf.sprintf in
@@ -117,8 +118,7 @@ let pprint rep =
   | Method_ill_typed (Sym sym) -> fmt "Method '%s' is ill typed.\n" sym
   | Dead_code -> fmt "Found dead code.\n"
   | Class_type_not_exist (Sym name) ->
-      fmt "Class type '%s' does not exist. Class '%s' has not been defined.\n"
-        name name
+      fmt "Class %s is not defined.\n" name
   | Return_bad_type ->
       fmt "Returning value of type %s but expected a value of type %s.\n"
         (ttos rep.obtained) (ttos rep.expected)
@@ -130,6 +130,8 @@ let pprint rep =
   | If_stmt_may_return ->
       fmt "Conditional statement only returns in one branch.\n"
   | Type_not_defined (Sym s) -> fmt "Type %s was not defined.\n" s
+  | Super_class_not_defined (Sym s) ->
+      fmt "Super class %s is not defined.\n" s
 
 let report exp obt kind =
   let rep = { expected = exp; obtained = obt; kind } in
