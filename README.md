@@ -227,11 +227,15 @@ project design. Below is a list of the ones I dealt with :
     During the whole development of the type checker, I dealt with "linear environments",
     more precisely, class instances were not seen as objects linked with an environment 
     representing its attributes, but as simple variables, and to access their attributes,
-    I had to make them visible in the environement contaning the object.
+    I had to make them visible in the environement contaning the object. It was not a
+    good design and I later decided to make things more accessible for the interpreter
+    development.
 
-    example: if an environment contains an instance "p" of class point, we cannot access
-    the attribute "p.x" directly from the environment. We must "expand" p to make
-    its attributes visible.
+    Example: 
+    *With expanding mecanism :*
+    if an environment contains an instance "p" of class point,
+    we cannot access the attribute "p.x" directly from the environment. We must "expand"
+    p to make its attributes visible.
 
         env = ["p"]
         get "p.x" from env : error
@@ -240,9 +244,8 @@ project design. Below is a list of the ones I dealt with :
         env = ["p"; "p.x"; "p.y"]
         get "p.x" from env : ok
 
-    This design is obviously expensive in memory, and time of environment construction, 
-    because we must expand each object of an environment to make their attributes visible.
-    Hence, I've decided to make fix this issue, making every attributes of an object
+    *With a better design (without expanding)*
+    Hence, I've decided to fix this issue, making every attributes of an object
     visible in an environment only containing the object.
         
         env = ["p"]
