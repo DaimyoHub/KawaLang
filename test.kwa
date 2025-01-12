@@ -1,28 +1,33 @@
-var point p;
+var point a;
+var point b;
 
 
 class point {
-  attr point x;
+  attr int x;
   attr int y;
 
-  method void point(point x, int y) {
+  method void point(int x, int y) {
     this.x = x;
     this.y = 5;
-  }
-
-  method int sum() {
-    var point x;
-    var int xy;
-
-    x = this.x;
-    xy = x.y;
-    return xy + this.y;
   }
 }
 
 
 main {
-  p = new point(p, 4);
-  print(p.sum());
+  a.x = 4;
+  b.x = 4;
+  a.y = 3;
+  b.y = 5;
+
+  var int test = 6;
+  
+  if (test == 6) {
+    print(1);
+    var int hi = 2;
+  } else {
+    print(0);
+  } 
+
+  print(hi);
 }
 

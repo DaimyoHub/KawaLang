@@ -82,23 +82,28 @@ typ:
 | name=IDENT { Cls (Sym name) }
 ;
 
+var_init:
+| VAR t=typ name=IDENT SET e=expr SEMI { (Sym name, t, e) }
+;
+
 var_decl:
-| VAR t=typ name=IDENT SEMI { { sym = Sym name; typ = t; data = No_data } }
+| VAR t=typ name=IDENT SEMI            { { sym = Sym name; typ = t; data = No_data } }
 ;
 
 attr_decl:
-| ATTR t=typ name=IDENT SEMI { { sym = Sym name; typ = t; data = No_data } }
+| ATTR t=typ name=IDENT SEMI           { { sym = Sym name; typ = t; data = No_data } }
 ;
 
 param:
-| t=typ name=IDENT { Sym name, { sym = Sym name; typ = t; data = No_data } }
+| t=typ name=IDENT                     { Sym name, { sym = Sym name; typ = t; data = No_data } }
+;
 
 params:
 | LPAR al=separated_list(COMMA, param) RPAR { List.rev al }
 ;
 
 method_def:
-| METHOD t=typ name=IDENT ps=option(params) BEGIN locals=list(var_decl) code=list(instr) END
+| METHOD t=typ name=IDENT ps=option(params) BEGIN code=list(instr) END
     {{
       sym = Sym name;
       ret_typ = t;
@@ -107,12 +112,6 @@ method_def:
           None -> []
         | Some l -> l
       );
-      locals = 
-        List.fold_left (
-          fun acc x ->
-            Env.add acc x.sym x;
-            acc
-        ) (Env.create ()) locals;
       code = code
     }}
 ;
@@ -146,6 +145,8 @@ class_def:
 
 (* ADD ATTR SET *)
 instr:
+| v=var_init
+    { let s, t, e = v in Init (s, t, e) }
 | PRINT LPAR e=expr RPAR SEMI
     { Print(e) }
 | name=IDENT SET e=expr SEMI

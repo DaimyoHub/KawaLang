@@ -5,6 +5,11 @@ open Allocator
 open Abstract_syntax
 open Symbol
 
+let ( let* ) res f =
+  match res with
+  | Ok x -> f x
+  | Error rep -> propagate rep
+
 (*
  * get_class_from_symbol context symbol
  *
@@ -63,6 +68,23 @@ let get_variable ctx env symbol =
   | None -> (
       match Env.get ctx.globals symbol with
       | None -> report_symbol_resolv (Loc_not_found symbol)
+      | Some var -> allocate_then_get ctx.globals var)
+  | Some var -> allocate_then_get env var
+
+let silent_get_variable ctx env symbol =
+  let allocate_then_get env var =
+    if is_object_allocated var = false then (
+      let allocated_obj =
+        { sym = var.sym; typ = var.typ; data = allocate_object_data ctx var }
+      in
+      Env.add env var.sym allocated_obj;
+      Ok allocated_obj)
+    else Ok var
+  in
+  match Env.get env symbol with
+  | None -> (
+      match Env.get ctx.globals symbol with
+      | None -> silent_report_symbol_resolv (Loc_not_found symbol)
       | Some var -> allocate_then_get ctx.globals var)
   | Some var -> allocate_then_get env var
 
@@ -238,3 +260,16 @@ let get_method_return_type cls meth_sym =
   match get_method_from_class cls meth_sym with
   | Error rep -> propagate rep
   | Ok meth -> Ok meth.ret_typ
+
+(*
+ * get_attributes ctx env object_symbol
+ *)
+let get_attributes ctx env obj_sym =
+  let* obj = get_variable ctx env obj_sym in
+  match obj.data with
+  | Obj attrs -> 
+      Ok (Hashtbl.fold (fun sym (typ, data) acc ->
+        Env.add acc sym { sym = sym; typ = typ; data = data };
+        acc
+      ) attrs (Env.create ()))
+  | _ -> failwith "get_attributes : variable is not an object."

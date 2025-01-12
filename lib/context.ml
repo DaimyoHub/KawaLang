@@ -6,7 +6,6 @@ type method_def = {
   sym : symbol;
   ret_typ : Type.typ;
   params : (symbol * loc) list;
-  locals : Env.t;
   code : instr list;
 }
 

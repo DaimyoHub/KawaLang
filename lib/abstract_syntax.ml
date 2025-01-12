@@ -1,4 +1,5 @@
 open Symbol
+open Type
 
 type expr =
   (* Constants & symbols *)
@@ -38,3 +39,4 @@ type instr =
   | While of expr * instr list
   | Ret of expr
   | Ignore of expr
+  | Init of symbol * typ * expr

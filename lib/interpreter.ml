@@ -158,9 +158,9 @@ and value_to_string ctx env = function
 
 and exec_instr ctx env instr =
   match instr with
-  | Print e ->
+  | Print e -> (
       print_endline (value_to_string ctx env (eval_expr ctx env e));
-      VNull
+      VNull)
   | If (cond, s1, s2) -> (
       match eval_expr ctx env cond with
       | VBool b -> if b then exec_seq ctx env s1 else exec_seq ctx env s2
@@ -173,9 +173,8 @@ and exec_instr ctx env instr =
             if v = VNull then exec_instr ctx env instr else v
           else VNull
       | _ -> failwith "Unreachable : condition is ill-typed")
-  | Set (loc, expr) -> (
+  | Set (Loc symbol, expr) -> (
       let new_data = value_to_data (eval_expr ctx env expr) in
-      let symbol = Result.get_ok @@ get_location_symbol loc in
       match Env.get ctx.globals symbol with
       | None -> (
           match Env.get env symbol with
@@ -187,7 +186,28 @@ and exec_instr ctx env instr =
           Env.add ctx.globals symbol
             { typ = v.typ; sym = v.sym; data = new_data };
           VNull)
+  | Set (Attr (obj_sym, attr_sym), expr) -> (
+      let update_attribute env obj new_data =
+        match obj.data with
+        | Obj attrs -> (
+            match get_attribute ctx env obj_sym attr_sym with
+            | Ok attr -> Hashtbl.replace attrs attr.sym (attr.typ, new_data)
+            | _ -> failwith "no");
+        | _ -> failwith "no"
+      in
+      let new_data = value_to_data (eval_expr ctx env expr) in
+      match Env.get ctx.globals obj_sym with
+      | None -> (
+          match Env.get env obj_sym with
+          | None -> failwith "Unreachable : unable to find loc"
+          | Some obj -> update_attribute env obj new_data; VNull)
+      | Some obj -> update_attribute ctx.globals obj new_data; VNull)
   | Ret e -> eval_expr ctx env e
   | Ignore e ->
       let _ = eval_expr ctx env e in
       VNull
+  | Init (sym, typ, expr) -> (
+      Env.add env sym { sym = sym; typ = typ; data = Expr expr };
+      exec_instr ctx env (Set (Loc sym, expr)))
+  | _ -> failwith "Invalid syntax"
+

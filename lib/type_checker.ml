@@ -80,17 +80,13 @@ and check_method ctx (class_def : class_def) method_def =
         acc)
       (Env.create ()) method_def.params
   in
-  let env = Env.merge [ method_def.locals; mapped_params ] in
-  match env with
-  | Some env -> (
-      let _ =
-        Env.add env (Sym "this")
-          { sym = Sym "this"; typ = Cls class_def.sym; data = No_data }
-      in
-      match check_seq ctx env method_def.ret_typ method_def.code with
-      | Ok rt -> Ok rt
-      | Error _ -> report None None (Method_ill_typed method_def.sym))
-  | None -> report_symbol_resolv Diff_locs_same_sym
+  let _ =
+    Env.add mapped_params (Sym "this")
+      { sym = Sym "this"; typ = Cls class_def.sym; data = No_data }
+  in
+  match check_seq ctx mapped_params method_def.ret_typ method_def.code with
+  | Ok rt -> Ok rt
+  | Error _ -> report None None (Method_ill_typed method_def.sym)
 
 (*
  * check context env expected_type expr
@@ -184,6 +180,12 @@ and check_instr ctx env exp instr =
   | Ignore e ->
       let* _ = type_expr ctx env e in
       Ok Void
+  | Init (sym, typ, expr) ->
+      if Result.is_ok @@ silent_get_variable ctx env sym then
+        report_symbol_resolv (Diff_locs_same_sym sym)
+      else (
+        Env.add env sym { sym = sym; typ = typ; data = Expr expr };
+        check_instr ctx env exp (Set (Loc sym, expr)))
 
 (*
  * check_if_statement context env expected_type if_stmt
@@ -192,9 +194,14 @@ and check_instr ctx env exp instr =
  * sentence "an if statement is well typed" in my programming report (see README.md).
  *)
 and check_if_statement ctx env exp instr =
+  let branch_env = Env.create () in
   let rec check_branch flag seq exp =
     match seq with
-    | [] -> Ok Void
+    | [] -> (
+        Env.iter (fun sym _ ->
+          let _ = Env.rem env sym and _ = Env.rem branch_env sym in ()
+        ) branch_env;
+        Ok Void)
     | [ Ret e ] -> (
         match check ctx env e exp with
         | Ok _ -> Ok exp
@@ -204,6 +211,20 @@ and check_if_statement ctx env exp instr =
         match check ctx env e exp with
         | Ok _ -> Ok exp
         | Error rep -> report (Some exp) rep.obtained Return_bad_type)
+    | Init (sym, typ, expr) :: s -> 
+        if Result.is_ok @@ silent_get_variable ctx env sym then
+          report_symbol_resolv (Diff_locs_same_sym sym)
+        else (
+          Env.add env sym { sym = sym; typ = typ; data = Expr expr };
+          Env.add branch_env sym { sym = sym; typ = typ; data = Expr expr };
+          match check_instr ctx env exp (Set (Loc sym, expr)) with
+          | Ok Void -> check_branch flag s exp
+          | Ok _ -> failwith "Unreachable : check_if_statement.check_branch"
+          | Error rep -> 
+              let _ =
+                report (Some Void) rep.obtained (If_branch_ill_typed flag)
+              in
+              check_branch flag s exp)
     | instr :: s -> (
         match check_instr ctx env exp instr with
         | Ok Void -> check_branch flag s exp

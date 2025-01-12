@@ -13,9 +13,11 @@ let _ =
     try Parser.program Lexer.token lexbuf
     with Parser.Error -> failwith (get_position lexbuf)
   in
+
   (match Type_checker.check_seq prog prog.globals Void prog.main with
   | Ok _ -> print_endline "yay"
   | Error _ -> print_endline "nop");
+
   ClassTable.iter
     (fun _ cls ->
       MethodTable.iter
@@ -23,4 +25,7 @@ let _ =
           let _ = Type_checker.check_method prog cls meth in
           ())
         cls.meths)
-    prog.classes
+    prog.classes;
+
+  Debug.print_env prog.globals;
+  let _ = Interpreter.exec_seq prog prog.globals prog.main in ()

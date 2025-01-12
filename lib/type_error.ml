@@ -9,7 +9,7 @@ type sym_res_err_kind =
   | Method_not_in_class of symbol * symbol
   | Not_loc
   | Attribute_not_found of symbol * symbol
-  | Diff_locs_same_sym
+  | Diff_locs_same_sym of symbol
 
 type typ_err_kind =
   | Sym_res_err of sym_res_err_kind
@@ -68,7 +68,7 @@ let pprint_symbol_resolv err =
   | Method_not_in_class (Sym c, Sym m) ->
       fmt "Method '%s' is not defined in class '%s'.\n" m c
   | Not_loc -> fmt "Expression does not correspond to any location.\n"
-  | Diff_locs_same_sym -> fmt "A symbol references two different locals.\n"
+  | Diff_locs_same_sym (Sym s) -> fmt "Symbol '%s' references multiple locations.\n" s
   | Attribute_not_found (Sym o, Sym s) ->
       fmt "Attribute '%s' of object '%s' was not found.\n" o s
 
