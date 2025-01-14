@@ -6,6 +6,28 @@
   open Environment
   open Symbol
   open Type
+  open Syntax_error
+
+  let env_of_list l =
+    List.fold_left (
+      fun acc x ->
+        Env.add acc x.sym x;
+        acc
+    ) (Env.create ()) l
+
+  let meth_table_of_list l =
+    List.fold_left (
+      fun acc (x : method_def) ->
+        MethodTable.add acc x.sym x;
+        acc
+    ) (MethodTable.create ()) l
+
+  let class_table_of_list l =
+    List.fold_left (
+      fun acc (x : class_def) ->
+        ClassTable.add acc x.sym x;
+        acc
+    ) (ClassTable.create ()) l
 
 %}
 
@@ -25,6 +47,8 @@
 %token EXTENDS
 %token INSTANCEOF
 %token CAST
+%token STATIC
+%token DOUBLE_COL
 
 %token PLUS MINUS TIMES DIVIDES MODULO 
 %token AND OR NOT
@@ -59,22 +83,19 @@
 %%
 
 program:
-| glb=list(var_decl) cls=list(class_def) MAIN BEGIN main=list(instr) END EOF
-    {{
-      classes = 
-        List.fold_left (
-          fun acc (x : class_def) ->
-            ClassTable.add acc x.sym x;
-            acc
-        ) (ClassTable.create ()) cls;
-      globals =
-        List.fold_left (
-          fun acc x ->
-            Env.add acc x.sym x;
-            acc
-        ) (Env.create ()) glb;
-      main = main
-    }}
+| glb=list(var_decl)
+  cls=list(class_def)
+  MAIN BEGIN
+    main=list(instr)
+  END
+  EOF
+    {
+      {
+        classes = class_table_of_list cls;
+        globals = env_of_list glb;
+        main    = main
+      }
+    }
 ;
 
 typ:
@@ -84,38 +105,86 @@ typ:
 | name=IDENT { Cls (Sym name) }
 ;
 
+semi: SEMI { () };
+
 var_init:
-| VAR t=typ name=IDENT SET e=expr SEMI { (Sym name, t, e) }
+| VAR typ IDENT SET error { raise Missing_semi }
+| VAR t=typ name=IDENT SET e=expr semi
+    {
+      (Sym name, t, e)
+    }
 ;
 
 var_decl:
-| VAR t=typ name=IDENT SEMI            { { sym = Sym name; typ = t; data = No_data } }
+| VAR typ IDENT error { raise Missing_semi }
+| VAR t=typ name=IDENT semi
+    {
+      make_loc name t
+    }
 ;
 
 attr_decl:
-| ATTR t=typ name=IDENT SEMI           { { sym = Sym name; typ = t; data = No_data } }
+| ATTR typ IDENT error { raise Missing_semi }
+| ATTR t=typ name=IDENT semi
+    {
+      make_loc name t
+    }
 ;
 
+(*
+static_attr_decl:
+| STATIC ATTR t=typ name=IDENT SEMI           { { sym = Sym name; typ = t; data = No_data } }
+;
+*)
+
 param:
-| t=typ name=IDENT                     { Sym name, { sym = Sym name; typ = t; data = No_data } }
+| t=typ name=IDENT
+    {
+      Sym name, make_loc name t
+    }
 ;
 
 params:
-| LPAR al=separated_list(COMMA, param) RPAR { List.rev al }
+| LPAR al=separated_list(COMMA, param) RPAR
+    {
+      List.rev al
+    }
+;
+
+static_meth_def:
+| STATIC METHOD t=typ name=IDENT ps=option(params) BEGIN
+    code=list(instr)
+  END
+    {
+      {
+        sym     = Sym name;
+        ret_typ = t;
+        params  = (
+          match ps with
+            None -> []
+          | Some l -> l
+        );
+        code    = code
+      }
+    }
 ;
 
 method_def:
-| METHOD t=typ name=IDENT ps=option(params) BEGIN code=list(instr) END
-    {{
-      sym = Sym name;
-      ret_typ = t;
-      params = (
-        match ps with
-          None -> []
-        | Some l -> l
-      );
-      code = code
-    }}
+| METHOD t=typ name=IDENT ps=option(params) BEGIN
+    code=list(instr)
+  END
+    {
+      {
+        sym     = Sym name;
+        ret_typ = t;
+        params  = (
+          match ps with
+          | None -> []
+          | Some l -> l
+        );
+        code    = code
+      }
+    }
 ;
 
 super:
@@ -123,48 +192,77 @@ super:
 ;
 
 class_def:
-| CLASS name=IDENT s=option(super) BEGIN attrs=list(attr_decl) meths=list(method_def) END
-    {{
-      sym   = Sym name;
-      attrs =
-        List.fold_left (
-          fun acc x ->
-            Env.add acc x.sym x;
-            acc
-        ) (Env.create ()) attrs;
-      meths =
-        List.fold_left (
-          fun acc (x : method_def) ->
-            MethodTable.add acc x.sym x;
-            acc
-        ) (MethodTable.create ()) meths;
-      super = (
-        match s with
-          None -> None
-        | Some s -> Some (Sym s)
-      )
-    }}
+| CLASS name=IDENT s=option(super) BEGIN
+    (*static_attrs=list(static_attr_decl)*)
+    attrs=list(attr_decl)
+    static_meths=list(static_meth_def)
+    meths=list(method_def)
+  END
+    {
+      {
+        static_attrs = Env.create ();
 
-(* ADD ATTR SET *)
+        sym          = Sym name;
+        attrs        = env_of_list attrs;
+        meths        = meth_table_of_list meths;
+        static_meths = meth_table_of_list static_meths;
+        super        = (
+          match s with
+            None -> None
+          | Some s -> Some (Sym s)
+        )
+      }
+    }
+
 instr:
 | v=var_init
-    { let s, t, e = v in Init (s, t, e) }
-| PRINT LPAR e=expr RPAR SEMI
-    { Print(e) }
-| name=IDENT SET e=expr SEMI
-    { Set (Loc (Sym name), e) }
-| THIS DOT attr=IDENT SET e=expr SEMI
-    { Set (Attr (Sym "this", Sym attr), e) }
-| obj=IDENT DOT attr=IDENT SET e=expr SEMI
-    { Set (Attr (Sym obj, Sym attr), e) }
-| IF LPAR cond=expr RPAR BEGIN is1=list(instr) END ELSE BEGIN is2=list(instr) END
-    { If (cond, is1, is2) }
-| WHILE LPAR cond=expr RPAR BEGIN seq=list(instr) END
-    { While (cond, seq) }
-| RETURN e=expr SEMI
-    { Ret e }
-| e=expr SEMI
-    { Ignore e }
+    {
+      let s, t, e = v in Init (s, t, e)
+    }
+| PRINT LPAR expr RPAR error { raise Missing_semi }
+| PRINT LPAR e=expr RPAR semi
+    {
+      Print(e)
+    }
+| IDENT SET expr error { raise Missing_semi }
+| name=IDENT SET e=expr semi 
+    {
+      Set (Loc (Sym name), e)
+    }
+| THIS DOT IDENT SET expr error { raise Missing_semi}
+| THIS DOT attr=IDENT SET e=expr semi
+    {
+      Set (Attr (Sym "this", Sym attr), e)
+    }
+| IDENT DOT IDENT SET expr error { raise Missing_semi }
+| obj=IDENT DOT attr=IDENT SET e=expr semi
+    {
+      Set (Attr (Sym obj, Sym attr), e)
+    }
+| RETURN expr error { raise Missing_semi }
+| RETURN e=expr semi
+    {
+      Ret e
+    }
+| expr error { raise Missing_semi }
+| e=expr semi
+    {
+      Ignore e
+    }
+| IF LPAR cond=expr RPAR BEGIN
+    is1=list(instr)
+  END ELSE BEGIN
+    is2=list(instr)
+  END
+    {
+      If (cond, is1, is2)
+    }
+| WHILE LPAR cond=expr RPAR BEGIN
+    seq=list(instr)
+  END
+    {
+      While (cond, seq)
+    }
 ;
 
 args:
@@ -186,6 +284,12 @@ object_expr:
       match args with
         None   -> Attr (Sym obj, Sym attr_or_meth)
       | Some l -> Call (Sym obj, Sym attr_or_meth, l)
+    }
+| t=typ DOUBLE_COL attr_or_meth=IDENT args=option(args)
+    {
+      match args with
+        None   -> StaticAttr (t, Sym attr_or_meth)
+      | Some l -> StaticCall (t, Sym attr_or_meth, l)
     }
 | c=cast_expr                                       { c }
 ;

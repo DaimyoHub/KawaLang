@@ -69,6 +69,12 @@ end
 type data = No_data | Expr of expr | Obj of (symbol, typ * data) Hashtbl.t
 type loc = { sym : symbol; typ : Type.typ; data : data }
 
+let make_loc_with_data name typ data =
+  { sym = Sym name; typ = typ; data = data }
+
+let make_loc name typ =
+  { sym = Sym name; typ = typ; data = No_data }
+
 let get_object_attributes loc =
   match loc.data with
   | Obj attrs -> attrs

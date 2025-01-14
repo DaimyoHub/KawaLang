@@ -4,11 +4,9 @@ open Type_error
 open Allocator
 open Abstract_syntax
 open Symbol
+open Type
 
-let ( let* ) res f =
-  match res with
-  | Ok x -> f x
-  | Error rep -> propagate rep
+let ( let* ) res f = match res with Ok x -> f x | Error rep -> propagate rep
 
 (*
  * get_class context symbol
@@ -23,15 +21,13 @@ let get_class ctx symbol =
 
 let is_super_class ctx final_super_sym class_sym =
   let* _ = get_class ctx final_super_sym in
-  let Sym fsn = final_super_sym in
+  let (Sym fsn) = final_super_sym in
   let rec find_super class_sym =
     let* cls = get_class ctx class_sym in
     match cls.super with
     | None -> Ok false
-    | Some (Sym super_name) -> (
-        if super_name = fsn then
-          Ok true
-        else find_super (Sym super_name))
+    | Some (Sym super_name) ->
+        if super_name = fsn then Ok true else find_super (Sym super_name)
   in
   find_super class_sym
 
@@ -47,15 +43,21 @@ let get_method ctx (class_def : class_def) symbol =
     match MethodTable.get super_def.meths symbol with
     | None -> (
         match super_def.super with
-        | None -> report_symbol_resolv (Method_not_in_class (class_def.sym, symbol))
+        | None ->
+            report_symbol_resolv (Method_not_in_class (class_def.sym, symbol))
         | Some super_symbol -> (
             match get_class ctx super_symbol with
             | Ok super_def -> get_method_in_super super_def
-            | Error _ ->
-                report None None (Super_class_not_defined super_symbol)))
+            | Error _ -> report None None (Super_class_not_defined super_symbol)
+            ))
     | Some meth -> Ok meth
   in
   get_method_in_super class_def
+
+let get_static_method class_def symbol =
+  match MethodTable.get class_def.static_meths symbol with
+  | None -> report_symbol_resolv (Method_not_in_class (class_def.sym, symbol))
+  | Some meth -> Ok meth
 
 (*
  * get_ctor_from_symbol ctx symbol
@@ -91,7 +93,7 @@ let get_variable ctx env symbol =
   match Env.get env symbol with
   | None -> (
       match Env.get ctx.globals symbol with
-      | None -> report_symbol_resolv (Loc_not_found symbol)
+      | None -> report_symbol_resolv (Loc_not_found (env, symbol))
       | Some var -> allocate_then_get ctx.globals var)
   | Some var -> allocate_then_get env var
 
@@ -108,7 +110,7 @@ let silent_get_variable ctx env symbol =
   match Env.get env symbol with
   | None -> (
       match Env.get ctx.globals symbol with
-      | None -> silent_report_symbol_resolv (Loc_not_found symbol)
+      | None -> silent_report_symbol_resolv (Loc_not_found (env, symbol))
       | Some var -> allocate_then_get ctx.globals var)
   | Some var -> allocate_then_get env var
 
@@ -145,6 +147,24 @@ let get_attribute ctx env loc_sym attr_sym =
             report_symbol_resolv (Attribute_not_found (loc_sym, attr_sym)))
       | _, _ -> report None (Some var.typ) (Expected_object var.sym))
   | Error rep -> propagate rep
+
+let get_static_attribute ctx typ attr_sym =
+  let allocate_then_get env var =
+    if is_object_allocated var = false then (
+      let allocated_obj =
+        { sym = var.sym; typ = var.typ; data = allocate_object_data ctx var }
+      in
+      Env.add env var.sym allocated_obj;
+      Ok allocated_obj)
+    else Ok var
+  in
+  match typ with
+  | Cls class_symbol -> (
+      let* cls = get_class ctx class_symbol in
+      match Env.get cls.static_attrs attr_sym with
+      | None -> report_symbol_resolv (Loc_not_found (cls.static_attrs, attr_sym))
+      | Some attr -> allocate_then_get cls.static_attrs attr)
+  | _ -> report None None Expected_class_type
 
 (*
  * get_location ctx env loc_kind
@@ -207,6 +227,15 @@ let get_attribute_type ctx env obj_sym attr_sym =
           else Ok attr.typ
       | _ -> Ok attr.typ)
   | Error rep -> propagate rep
+
+let get_static_attribute_type ctx typ attr_sym =
+  let* attr = get_static_attribute ctx typ attr_sym in
+  match attr.typ with
+  | Cls class_sym ->
+      if Result.is_error @@ get_class ctx class_sym then
+        report None None (Type_not_defined class_sym)
+      else Ok attr.typ
+  | _ -> Ok attr.typ
 
 (*
  * get_location_type ctx env loc_kind
@@ -280,10 +309,11 @@ let get_method_return_type ctx cls meth_sym =
 let get_attributes ctx env symbol =
   let* obj = get_variable ctx env symbol in
   match obj.data with
-  | Obj attrs -> 
-      Ok (Hashtbl.fold (fun sym (typ, data) acc ->
-        Env.add acc sym { sym = sym; typ = typ; data = data };
-        acc
-      ) attrs (Env.create ()))
+  | Obj attrs ->
+      Ok
+        (Hashtbl.fold
+           (fun sym (typ, data) acc ->
+             Env.add acc sym { sym; typ; data };
+             acc)
+           attrs (Env.create ()))
   | _ -> report None (Some obj.typ) (Loc_type_not_user_def obj.sym)
-

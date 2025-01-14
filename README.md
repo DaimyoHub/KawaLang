@@ -72,13 +72,13 @@ The development of the typechecker put some aspects of type checking and kawa se
 at stake. Below is a list of such stakes and how I decided to deal with :
 
   - **Type error report**
-    I first wanted to propagate type errors throw the exception system of Ocaml, but
+    I first wanted to propagate type errors thanks to the exception system of Ocaml, but
     this design was hard to handle because I did not always know if in some situation,
     it would be better to just let an exception stop the typing process or to handle
     it in different possible ways.
     Eventually, I decided to handle type errors through a report mecanism which, on the
     one hand, generates side effects, printing a type error during the analysis, and on
-    the other hand, can be passed through as a returned object through every typing
+    the other hand, can be passed through as a returned object in every typing
     or checking function, to potentially recursivelly analyze the program in order
     to generate a more precise type error report.
 
@@ -95,7 +95,7 @@ at stake. Below is a list of such stakes and how I decided to deal with :
 
   - **How to deal with method code checking ?**
     I first tried to recursivelly check the code of methods when a method call or an
-    instaciation was found, but it only checked a limited portion of the program, leaving
+    instanciation was found, but it only checked a limited portion of the program, leaving
     dead code unchecked. 
     I therefore designed the type checker in order to check methods independently from
     call expressions.
@@ -108,23 +108,18 @@ at stake. Below is a list of such stakes and how I decided to deal with :
     to respect the time schedule.
 
   - **Heavy design**
-    I think that the design I chose to make the type checker makes the code globally heavy
+    I think that the design I chose to make the type checker makes the code a bit heavy to read 
     and sometimes hard to understand at first sight, that's why I've tried to comment it
     where I thought it could really be useful for the examinator to read.
     The reasons of some such heavy structures are the time schedule, a naive design for
-    some features and patch-ups.
+    some features (extensions...) and patch-ups.
 
   - **Return statements in branching**
     I wanted to make the language permissive enough to allow branches to return values in
-    the body of a method. However, it did not have enough time to handle cases where 
+    the body of a method. However, I did not have enough time to handle cases where 
     one branch would return, and the other would not, so I decided to force the user to 
     make an if statement return the same type in both of its branchs, or to not make it return at all.
-    For instance, the given codes report type errors
-
-> [!NOTE]
-> It was nice to remark that the typechecker is an actual kind of reducted interpreter : we
-> clearly see that it evaluates a given program, but instead of working with real time values
-> it uses approximations of them (types).
+    For instance, some specific branching/return patterns are given below :
 
 ```
 method int test() { /* error : method does not return well */
@@ -186,33 +181,55 @@ method int test() { /* ok : both branches do not return but a the method always 
 }
 ```
 
-Below is a list of features provided by the type checker :
+> [!NOTE]
+> It was nice to remark that the typechecker is an actual kind of interpreter : we
+> clearly see that it evaluates a given program, but instead of working with real time values
+> it uses approximations of them (types).
 
-  - [x] Detect if types that are neither user-defined or built-in.
-  - [x] Detect if a given symbol does not correspond to a location.
-  - [x] Detect if the user tries to instatiate a class without any defined constructor.
-  - [x] Detect if the body of a method contains different local variables which have
-        the same symbol.
-  - [x] Detect if the left/right hand side operand of an expression is ill-typed.
-  - [x] Detect if an expression is ill-typed.
-  - [x] Detect if a statement condition expression is a typed as a boolean.
-  - [x] Detect if a void method returns.
-  - [x] Detect if a return statement is missing in a typed method.
-  - [x] Detect set statements where the left hand side operand type does not correspond
-        to the variable type.
-  - [x] Detect if a the argument of a print statement is an int.
-  - [x] Detect if the user tries to call a method with too much arguments.
-  - [x] Detect if the user tries to call a method missing some arguments.
-  - [x] Detect if a given argument type correspond to the associated parameter type.
-  - [x] Detect if a statement is ill typed.
-  - [x] Detect if both branches of an if statement do not return a value of the same type.
-  - [x] Detect if only one branch of an if statement returns a value.
-  - [x] Not_obj_inst
-  - [x] Detect if a method body contains multiple sequential return statements.
-  - [x] Detect ill typed methods.
-  - [x] Detect dead code in methods body
-  - [x] Detect if the return type of a method correspond to returned values in its body.
-  - [x] Detect if a branch of an if statement is ill typed.
+Below is a list of mandaroty features provided by the type checker :
+
+  - **(M) Detect if the user is trying to access an attribute that does not belong to an object.**
+  - **(M) Detect if the user is trying to access an attribute/method of a non-object location.**
+  - **(M) Detect if a void method returns.**
+  - **(M) Detect if an expression is ill-typed.**
+  - **(M) Detect if a statement is ill typed.**
+  - **(M) Detect if a given symbol does not correspond to a location. (see extension for details)**
+
+Every other features of the type checker are extensions. The type checker recursivelly travels
+a whole branch of the program and if at some node, some "basic" type error is found, it provides
+details of the error, according to the context.
+
+Below is a list of object oriented static checking features :
+
+  - Detect if a user forgets to define a contructor for a class.
+  - Detect if the user tries to instantiate a class without any defined constructor.
+  - Detect if a the argument of a print statement is an int.
+
+Then a list of method/method calling checking features :
+  - Detect if the user tries to call a method with too much arguments.
+  - Detect if the user tries to call a method missing some arguments.
+  - Detect if a return statement is missing in a typed method.
+  - Detect if a given argument type correspond to the associated parameter type.
+  - Detect ill typed methods.
+
+A list of features of the type checker related to branching/return statements :
+
+  - Detect if both branches of an if statement do not return a value of the same type.
+  - Detect if only one branch of an if statement returns a value.
+  - Detect if a method body contains multiple sequential return statements.
+  - Detect code written after a block of instructions that will surelly return. 
+  - Detect if the return type of a method correspond to returned values in its body.
+  - Detect if a branch of an if statement is ill typed.
+
+Finally, some other generic checking features :
+
+  - Detect if types that are either user-defined or built-in.
+  - Detect if some symbol references different locations in a block of instructions.
+    (while statements are bugged : I did not have time to handle this specific case)
+  - Precises if the left/right hand side operand of an expression is ill-typed.
+  - Detect if a statement condition expression is a typed as a boolean.
+  - Detect set statements where the left hand side operand type does not correspond
+    to the variable type.
 
 ### Interpreter
 
@@ -232,7 +249,7 @@ project design. Below is a list of the ones I dealt with :
     development.
 
     Example: 
-    *With expanding mecanism : *
+    With expanding mecanism :
     if an environment contains an instance "p" of class point,
     we cannot access the attribute "p.x" directly from the environment. We must "expand"
     p to make its attributes visible.
@@ -244,14 +261,31 @@ project design. Below is a list of the ones I dealt with :
         env = ["p"; "p.x"; "p.y"]
         get "p.x" from env : ok
 
-    *With a better design (without expanding) : *
+    With a better design (without expanding) :
     Hence, I've decided to fix this issue, making every attributes of an object
     visible in an environment only containing the object.
         
         env = ["p"]
         get "p.x" from env : ok
 
-    To perform it, I first look for the object in the given environment, then I try to
+    To perform it, I first look for the object in the given environment, then I try to find
     the wanted attribute in its table of attributes.
 
+### List of extensions
+
+This interpreter of the Kawa language includes the following extensions :
+
+  - See features of the type checker that are not mandatory.
+  - [x] Cast expressions : `cast (class) expr`
+  - [x] The instanceof operation : `expr instanceof class`
+  - [x] Static methods (but not attributes because I did not have time to implement them)
+  - [x] Declaration of variables with an initial value.
+  - [-] Declaration of variables everywhere in a block of instructions. (in the case of a while
+        block, it does not work properly. Local variables of the block will persist out of scope)
+  - [x] Structural equality of locations.
+  - [x] Telling when a semicolon is missing.
+  - [x] When the user is trying to access a location that does not exist, it gives an error
+    message specifying a location's name that have to wanted type and that is almost
+    like the written symbol.
+  - [-] Immutable attributes.
 

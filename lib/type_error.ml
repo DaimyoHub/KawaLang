@@ -1,10 +1,12 @@
 open Symbol
 open Abstract_syntax
 open Type
+open Environment
+open Levenshtein
 
 type sym_res_err_kind =
   | Class_not_found of symbol
-  | Loc_not_found of symbol
+  | Loc_not_found of Env.t * symbol
   | Class_without_ctor of symbol
   | Method_not_in_class of symbol * symbol
   | Not_loc
@@ -65,21 +67,23 @@ let pprint_symbol_resolv err =
   match err with
   | Class_not_found (Sym s) ->
       fmt "Symbol '%s' does not correspond to a class.\n" s
-  | Loc_not_found (Sym s) ->
-      fmt "Symbol '%s' does not correspond to any location.\n" s
+  | Loc_not_found (env, Sym s) ->
+      let Sym ncn = find_nearest_coherent_symbol env (Sym s) in
+      fmt "Symbol '%s' does not correspond to any location. Did you mean '%s' ?\n" s ncn
   | Class_without_ctor (Sym s) ->
       fmt "Constructor of the class '%s' is not defined.\n" s
   | Method_not_in_class (Sym c, Sym m) ->
       fmt "Method '%s' is not defined in class %s.\n" m c
   | Not_loc -> fmt "Expression does not correspond to any location.\n"
-  | Diff_locs_same_sym (Sym s) -> fmt "Symbol '%s' references multiple locations.\n" s
+  | Diff_locs_same_sym (Sym s) ->
+      fmt "Symbol '%s' references multiple locations.\n" s
   | Attribute_not_found (Sym o, Sym s) ->
       fmt "Attribute '%s' of object '%s' was not found.\n" s o
 
 let pprint rep =
   let fmt = Printf.sprintf in
   match rep.kind with
-  | Sym_res_err err -> pprint_symbol_resolv err
+  | Sym_res_err err -> pprint_symbol_resolv err 
   | Lhs_ill_typed _ ->
       fmt "LHS has type %s. Expected type %s instead.\n" (ttos rep.obtained)
         (ttos rep.expected)
@@ -120,8 +124,7 @@ let pprint rep =
       fmt "Found multiple sequential return statements for a same method.\n"
   | Method_ill_typed (Sym sym) -> fmt "Method '%s' is ill typed.\n" sym
   | Dead_code -> fmt "Found dead code.\n"
-  | Class_type_not_exist (Sym name) ->
-      fmt "Class %s is not defined.\n" name
+  | Class_type_not_exist (Sym name) -> fmt "Class %s is not defined.\n" name
   | Return_bad_type ->
       fmt "Returning value of type %s but expected a value of type %s.\n"
         (ttos rep.obtained) (ttos rep.expected)
@@ -133,10 +136,8 @@ let pprint rep =
   | If_stmt_may_return ->
       fmt "Conditional statement only returns in one branch.\n"
   | Type_not_defined (Sym s) -> fmt "Type %s was not defined.\n" s
-  | Super_class_not_defined (Sym s) ->
-      fmt "Super class %s is not defined.\n" s
-  | Expected_object (Sym s) ->
-      fmt "Expected location '%s' to be an object.\n" s
+  | Super_class_not_defined (Sym s) -> fmt "Super class %s is not defined.\n" s
+  | Expected_object (Sym s) -> fmt "Expected location '%s' to be an object.\n" s
   | Expected_class_type ->
       fmt "Expected a class instead of type %s.\n" (ttos rep.obtained)
   | Prohibited_cast ->

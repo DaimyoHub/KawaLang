@@ -50,7 +50,7 @@ let rec eval_expr ctx env expr =
       (* Instead of redoing the whole type checker to make it change the AST,
          I prefer to just type the expression e twice (in the type checker,
          and in the interpreter). *)
-      match type_expr ctx env e with 
+      match type_expr ctx env e with
       | Ok typ -> if t = typ then VBool true else VBool false
       | Error _ -> failwith "Unreachable : expr is ill typed")
   | Lne (e1, e2) -> eco e1 e2 ( < )
@@ -63,28 +63,25 @@ let rec eval_expr ctx env expr =
       match eexpr e with
       | VBool b -> VBool (b = false)
       | _ -> failwith "Unreachable : not expr is ill-typed")
-  | Inst (_, _) -> VNull
-  | Call (_, _, _) -> failwith "TODO"
-  | Cast (_, _) -> failwith "TODO"
+  | _ -> failwith "TODO"
 
 and eval_equality ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
-  | VInt a, VInt b -> VBool ((a = b) = op)
-  | VBool a, VBool b -> VBool ((a = b) = op)
+  | VInt a, VInt b -> VBool (a = b = op)
+  | VBool a, VBool b -> VBool (a = b = op)
   | VNull, VNull -> VBool op
   | VObj _, VObj _ -> (
-      match e1, e2 with
+      match (e1, e2) with
       | Loc (Sym n1), Loc (Sym n2) -> VBool ((n1 = n2) = op)
       | Attr (Sym o1, Sym a1), Attr (Sym o2, Sym a2) ->
           VBool ((o1 = o2 && a1 = a2) = op)
-      | _, _ -> VBool (op = false)
-    )
+      | _, _ -> VBool (op = false))
   | _ -> failwith "Unreachable : eq expr is ill typed"
 
 and eval_structural_equality_op ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
-  | VInt a, VInt b -> VBool ((a = b) = op)
-  | VBool a, VBool b -> VBool ((a = b) = op)
+  | VInt a, VInt b -> VBool (a = b = op)
+  | VBool a, VBool b -> VBool (a = b = op)
   | VNull, VNull -> VBool op
   | VObj a1, VObj a2 ->
       let res = ref true in
@@ -183,9 +180,9 @@ and value_to_string ctx env = function
 
 and exec_instr ctx env instr =
   match instr with
-  | Print e -> (
+  | Print e ->
       print_endline (value_to_string ctx env (eval_expr ctx env e));
-      VNull)
+      VNull
   | If (cond, s1, s2) -> (
       match eval_expr ctx env cond with
       | VBool b -> if b then exec_seq ctx env s1 else exec_seq ctx env s2
@@ -217,7 +214,7 @@ and exec_instr ctx env instr =
         | Obj attrs -> (
             match get_attribute ctx env obj_sym attr_sym with
             | Ok attr -> Hashtbl.replace attrs attr.sym (attr.typ, new_data)
-            | _ -> failwith "no");
+            | _ -> failwith "no")
         | _ -> failwith "no"
       in
       let new_data = value_to_data (eval_expr ctx env expr) in
@@ -225,14 +222,17 @@ and exec_instr ctx env instr =
       | None -> (
           match Env.get env obj_sym with
           | None -> failwith "Unreachable : unable to find loc"
-          | Some obj -> update_attribute env obj new_data; VNull)
-      | Some obj -> update_attribute ctx.globals obj new_data; VNull)
+          | Some obj ->
+              update_attribute env obj new_data;
+              VNull)
+      | Some obj ->
+          update_attribute ctx.globals obj new_data;
+          VNull)
   | Ret e -> eval_expr ctx env e
   | Ignore e ->
       let _ = eval_expr ctx env e in
       VNull
-  | Init (sym, typ, expr) -> (
-      Env.add env sym { sym = sym; typ = typ; data = Expr expr };
-      exec_instr ctx env (Set (Loc sym, expr)))
+  | Init (sym, typ, expr) ->
+      Env.add env sym { sym; typ; data = Expr expr };
+      exec_instr ctx env (Set (Loc sym, expr))
   | _ -> failwith "Invalid syntax"
-

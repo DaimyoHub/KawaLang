@@ -28,7 +28,8 @@
           "method",     METHOD;
           "extends",    EXTENDS;
           "instanceof", INSTANCEOF;
-          "cast",       CAST
+          "cast",       CAST;
+          "static",     STATIC
         ];
       fun s ->
         try  Hashtbl.find h s
@@ -66,6 +67,7 @@ rule token = parse
   | ")"                  { RPAR }
   | "{"                  { BEGIN }
   | "}"                  { END }
+  | "::"                 { DOUBLE_COL }
 
   (* Unary and binary operators *)
   | '-'                  { MINUS }

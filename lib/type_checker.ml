@@ -29,6 +29,7 @@ let rec type_expr ctx env expr =
   | True | False -> Ok Bool
   | Loc s -> get_variable_type ctx env s
   | Attr (o, s) -> get_attribute_type ctx env o s
+  | StaticAttr (t, s) -> get_static_attribute_type ctx t s
   | This -> get_variable_type ctx env (Sym "this")
   | Add (e1, e2) | Mul (e1, e2) | Mod (e1, e2) | Min (e1, e2) | Div (e1, e2) ->
       tbo Int Int e1 e2
@@ -48,7 +49,8 @@ let rec type_expr ctx env expr =
       match t with
       | Cls class_symbol ->
           let* _ = get_class ctx class_symbol in
-          let* _ = type_expr ctx env e in Ok Bool
+          let* _ = type_expr ctx env e in
+          Ok Bool
       | _ -> report None (Some t) Expected_class_type)
   | Geq (e1, e2) | Lne (e1, e2) | Gne (e1, e2) | Leq (e1, e2) ->
       tbo Int Bool e1 e2
@@ -72,15 +74,21 @@ let rec type_expr ctx env expr =
           let* meth = get_method ctx cls callee in
           type_call ctx env callee meth.ret_typ args meth.params
       | _ -> report None (Some var_t) (Loc_type_not_user_def caller))
+  | StaticCall (typ, callee, args) -> (
+      match typ with
+      | Cls class_symbol ->
+          let* cls = get_class ctx class_symbol in
+          let* meth = get_static_method cls callee in
+          type_call ctx env callee meth.ret_typ args meth.params
+      | _ -> report None (Some typ) Expected_class_type)
   | Cast (expr, typ) -> (
       match typ with
-      | Cls cast_cls_sym -> let* t = type_expr ctx env expr in (
+      | Cls cast_cls_sym -> (
+          let* t = type_expr ctx env expr in
           match t with
           | Cls expr_cls_sym ->
               let* res = is_super_class ctx cast_cls_sym expr_cls_sym in
-              if res then 
-                Ok typ
-              else report None None Prohibited_cast
+              if res then Ok typ else report None None Prohibited_cast
           | _ -> report None None Expected_class_type)
       | _ -> report None None Expected_class_type)
 
@@ -189,6 +197,8 @@ and check_instr ctx env exp instr =
             report None None (Set_ill_typed_without_info sym)
           else report (Some t) rep.obtained (Set_ill_typed (sym, e)))
   | If (_, _, _) -> check_if_statement ctx env exp instr
+  (* BUG : IF WE INIT A VARIABLE IN THE BODY OF A WHILE STATEMENT, IT PERSISTS IN
+     THE ENV OF THE BODY CONTAINING THE WHILE STATEMENT *)
   | While (cond, is) -> (
       match chk cond Bool with
       | Ok _ -> chs exp is
@@ -201,7 +211,7 @@ and check_instr ctx env exp instr =
       if Result.is_ok @@ silent_get_variable ctx env sym then
         report_symbol_resolv (Diff_locs_same_sym sym)
       else (
-        Env.add env sym { sym = sym; typ = typ; data = Expr expr };
+        Env.add env sym { sym; typ; data = Expr expr };
         check_instr ctx env exp (Set (Loc sym, expr)))
 
 (*
@@ -214,11 +224,13 @@ and check_if_statement ctx env exp instr =
   let branch_env = Env.create () in
   let rec check_branch flag seq exp =
     match seq with
-    | [] -> (
-        Env.iter (fun sym _ ->
-          let _ = Env.rem env sym and _ = Env.rem branch_env sym in ()
-        ) branch_env;
-        Ok Void)
+    | [] ->
+        Env.iter
+          (fun sym _ ->
+            let _ = Env.rem env sym and _ = Env.rem branch_env sym in
+            ())
+          branch_env;
+        Ok Void
     | [ Ret e ] -> (
         match check ctx env e exp with
         | Ok _ -> Ok exp
@@ -228,16 +240,16 @@ and check_if_statement ctx env exp instr =
         match check ctx env e exp with
         | Ok _ -> Ok exp
         | Error rep -> report (Some exp) rep.obtained Return_bad_type)
-    | Init (sym, typ, expr) :: s -> 
+    | Init (sym, typ, expr) :: s ->
         if Result.is_ok @@ silent_get_variable ctx env sym then
           report_symbol_resolv (Diff_locs_same_sym sym)
         else (
-          Env.add env sym { sym = sym; typ = typ; data = Expr expr };
-          Env.add branch_env sym { sym = sym; typ = typ; data = Expr expr };
+          Env.add env sym { sym; typ; data = Expr expr };
+          Env.add branch_env sym { sym; typ; data = Expr expr };
           match check_instr ctx env exp (Set (Loc sym, expr)) with
           | Ok Void -> check_branch flag s exp
           | Ok _ -> failwith "Unreachable : check_if_statement.check_branch"
-          | Error rep -> 
+          | Error rep ->
               let _ =
                 report (Some Void) rep.obtained (If_branch_ill_typed flag)
               in
@@ -256,17 +268,15 @@ and check_if_statement ctx env exp instr =
   | If (cond, seq1, seq2) -> (
       match check ctx env cond Bool with
       | Ok _ -> (
-          let* t = check_branch true seq1 exp in (
+          let* t = check_branch true seq1 exp in
           match check_branch false seq2 t with
           | Ok u ->
               if t = u then Ok t
               else if
-                (exp <> Void && t <> Void && u = Void)
-                || (t = Void && u <> Void)
+                (exp <> Void && t <> Void && u = Void) || (t = Void && u <> Void)
               then report None None If_stmt_may_return
               else report (Some t) (Some u) Branches_not_return_same
-          | Error rep ->
-              report (Some t) rep.obtained Branches_not_return_same))
+          | Error rep -> report (Some t) rep.obtained Branches_not_return_same)
       | Error rep -> report (Some Bool) rep.obtained (Cond_not_bool cond))
   | _ ->
       failwith

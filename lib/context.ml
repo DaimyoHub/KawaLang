@@ -16,8 +16,10 @@ end)
 
 type class_def = {
   sym : symbol;
+  static_attrs : Env.t;
   attrs : Env.t;
   meths : MethodTable.t;
+  static_meths : MethodTable.t;
   super : symbol option;
 }
 

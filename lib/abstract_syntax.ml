@@ -8,6 +8,7 @@ type expr =
   | False
   | Loc of symbol
   | Attr of symbol * symbol
+  | StaticAttr of typ * symbol
   | This
   (* Arithmetic operators *)
   | Add of expr * expr
@@ -34,7 +35,7 @@ type expr =
   (* OO operations *)
   | Inst of symbol * expr list
   | Call of symbol * symbol * expr list
-
+  | StaticCall of typ * symbol * expr list
   | Cast of expr * typ
 
 type instr =

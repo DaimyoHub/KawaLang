@@ -14,16 +14,16 @@ let allocate_object_data ctx obj =
     | None ->
         let _ = silent_report_symbol_resolv (Class_not_found class_symbol) in
         No_data
-    | Some cls ->
+    | Some cls -> (
         Env.iter
           (fun s loc -> Hashtbl.add attrs s (loc.typ, loc.data))
           cls.attrs;
         match cls.super with
         | None -> Obj attrs
-        | Some super_symbol -> add_class_attributes attrs super_symbol
+        | Some super_symbol -> add_class_attributes attrs super_symbol)
   in
   match obj.typ with
-  | Cls sym -> 
+  | Cls sym ->
       let res = Hashtbl.create 5 in
       add_class_attributes res sym
   | _ -> No_data
