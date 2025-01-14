@@ -2,33 +2,38 @@ open Lang
 open Lexing
 open Context
 open Syntax_error
-open Interpreter
 
 let get_position lexbuf =
   let pos = lexbuf.lex_curr_p in
-  Printf.sprintf "Syntax error : %d:%d" pos.pos_lnum
-    (pos.pos_cnum - pos.pos_bol + 1)
+  Printf.sprintf "%d:%d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
-let _ =
-  let lexbuf = In_channel.open_text "test.kwa" |> Lexing.from_channel in
+let kawai file =
+  let lexbuf = Lexing.from_channel (In_channel.open_text file) in
   let prog =
     try Parser.program Lexer.token lexbuf with
-    | Parser.Error -> failwith (get_position lexbuf)
+    | Parser.Error ->
+        failwith (Printf.sprintf "Syntax error : %s" (get_position lexbuf))
     | Missing_semi ->
         failwith (Printf.sprintf "Missing semicolon : %s" (get_position lexbuf))
   in
+  try
+    Type_checker.check_prog prog;
+    Interpreter.exec_prog prog
+  with
+  | Type_checker.Class_type_error class_def ->
+      let (Sym class_name) = class_def.sym in
+      print_endline (Printf.sprintf "Class %s is ill-typed." class_name);
+      VNull
+  | Type_checker.Main_type_error ->
+      print_endline "Main block is ill-typed.";
+      VNull
+  | Interpreter.Exec_error pos ->
+      print_endline (Printf.sprintf "Execution error : %s" pos);
+      VNull
 
-  (match Type_checker.check_seq prog prog.globals Void prog.main with
-  | Ok _ -> print_endline "yay"
-  | Error _ -> print_endline "nop");
-
-  ClassTable.iter
-    (fun _ cls ->
-      MethodTable.iter
-        (fun _ meth ->
-          let _ = Type_checker.check_method prog cls meth in
-          ())
-        cls.meths)
-    prog.classes;
-
-  let _ = exec_seq prog prog.globals prog.main in ()
+let () =
+  try
+    let relative_path = Sys.argv.(1) in
+    let _ = kawai relative_path in ()
+  with
+  | _ -> print_endline "Command line : kawai 'path/to/file.kwa'"

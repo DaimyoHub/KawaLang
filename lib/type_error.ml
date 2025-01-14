@@ -22,7 +22,7 @@ type typ_err_kind =
   | Void_method_return
   | Typed_method_not_return
   | Set_ill_typed of symbol * expr
-  | Print_not_int of expr
+  | Print_ill_typed of expr
   | Unexpected_args of symbol
   | Expected_args of symbol
   | Arg_ill_typed of symbol * expr
@@ -103,7 +103,7 @@ let pprint rep =
   | Set_ill_typed (Sym s, _) ->
       fmt "Cannot set location '%s' typed as %s with a value of type %s.\n" s
         (ttos rep.expected) (ttos rep.obtained)
-  | Print_not_int _ -> "Argument of print is not of type int.\n"
+  | Print_ill_typed _ -> "Print instruction is ill-typed.\n"
   | Unexpected_args (Sym s) ->
       fmt "Calling '%s' method with too much arguments.\n" s
   | Expected_args (Sym s) -> fmt "Missing arguments to call '%s' method.\n" s

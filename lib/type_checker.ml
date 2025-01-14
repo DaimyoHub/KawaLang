@@ -6,6 +6,9 @@ open Symbol_resolver
 open Symbol
 open Type_error
 
+exception Class_type_error of class_def
+exception Main_type_error
+
 (*
  * let* x = func_returning_result ... in ...
  *
@@ -16,13 +19,52 @@ open Type_error
 let ( let* ) res f = match res with Ok x -> f x | Error rep -> propagate rep
 
 (*
+ * check_prog context
+ *
+ * Checks if the program given by the context is well-typed. It checks each method
+ * from each class, then it checks the main block.
+ *
+ * If some component of the program is ill-typed, it raises an exception
+ * ((Class_type_error class_def) if the error is in a class, and Main_type_error
+ * if it is in the main block).
+ *)
+let rec check_prog ctx =
+  ClassTable.iter
+    (fun csym class_def ->
+      let is_ctor_checked = ref false in
+      MethodTable.iter
+        (fun msym method_def ->
+          if csym = msym then is_ctor_checked := true;
+
+          match check_method ctx class_def method_def with
+          | Ok _ -> ()
+          | Error _ -> raise (Class_type_error class_def))
+        class_def.meths;
+
+      MethodTable.iter
+        (fun _ static_method_def ->
+          match check_static_method ctx static_method_def with
+          | Ok _ -> ()
+          | Error _ -> raise (Class_type_error class_def))
+        class_def.static_meths;
+
+      if !is_ctor_checked = false then
+        let _ = report_symbol_resolv (Class_without_ctor csym) in
+        raise (Class_type_error class_def))
+    ctx.classes;
+
+  match check_seq ctx ctx.globals Void ctx.main with
+  | Ok _ -> ()
+  | Error _ -> raise Main_type_error
+
+(*
  * type_expr context env expr
  * 
  * Types the given expression based on the context. If any typing error, or symbol
  * resolving error occurs, then it is reported. Reports do not stop the typing
  * process to allow an exhaustive analysis of the given expression in one pass.
  *)
-let rec type_expr ctx env expr =
+and type_expr ctx env expr =
   let tbo = type_bin_op ctx env in
   match expr with
   | Cst _ -> Ok Int
@@ -91,6 +133,23 @@ let rec type_expr ctx env expr =
               if res then Ok typ else report None None Prohibited_cast
           | _ -> report None None Expected_class_type)
       | _ -> report None None Expected_class_type)
+
+(*
+ * check_static_method context class_def method_def
+ * 
+ * Checks if a given static method associated to a class is well typed or not.
+ *)
+and check_static_method ctx method_def =
+  let mapped_params =
+    List.fold_left
+      (fun acc (sym, loc) ->
+        Env.add acc sym loc;
+        acc)
+      (Env.create ()) method_def.params
+  in
+  match check_seq ctx mapped_params method_def.ret_typ method_def.code with
+  | Ok rt -> Ok rt
+  | Error _ -> report None None (Method_ill_typed method_def.sym)
 
 (*
  * check_method context class_def method_def
@@ -174,9 +233,9 @@ and check_instr ctx env exp instr =
   let chk = check ctx env and chs = check_seq ctx env in
   match instr with
   | Print e -> (
-      match chk e Int with
+      match type_expr ctx env e with
       | Ok _ -> Ok Void
-      | Error rep -> report (Some Int) rep.obtained (Print_not_int e))
+      | Error rep -> report (Some Int) rep.obtained (Print_ill_typed e))
   | Set (loc, Inst (class_symbol, args)) -> (
       let* t = get_location_type ctx env loc in
       match t with
@@ -211,7 +270,7 @@ and check_instr ctx env exp instr =
       if Result.is_ok @@ silent_get_variable ctx env sym then
         report_symbol_resolv (Diff_locs_same_sym sym)
       else (
-        Env.add env sym { sym; typ; data = Expr expr };
+        Env.add env sym { sym; typ; data = No_data };
         check_instr ctx env exp (Set (Loc sym, expr)))
 
 (*
@@ -244,8 +303,8 @@ and check_if_statement ctx env exp instr =
         if Result.is_ok @@ silent_get_variable ctx env sym then
           report_symbol_resolv (Diff_locs_same_sym sym)
         else (
-          Env.add env sym { sym; typ; data = Expr expr };
-          Env.add branch_env sym { sym; typ; data = Expr expr };
+          Env.add env sym { sym; typ; data = No_data };
+          Env.add branch_env sym { sym; typ; data = No_data };
           match check_instr ctx env exp (Set (Loc sym, expr)) with
           | Ok Void -> check_branch flag s exp
           | Ok _ -> failwith "Unreachable : check_if_statement.check_branch"

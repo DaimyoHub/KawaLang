@@ -14,5 +14,7 @@ class list {
 main {
   test = new list(1, new list(2, nil));
   var list h = test.s;
+
+  print(h.x);
 }
 

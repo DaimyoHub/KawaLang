@@ -28,7 +28,5 @@ let print_method_table mt =
   Hashtbl.iter
     (fun k v ->
       let (Sym name) = k in
-      print_endline
-      @@ Printf.sprintf "%s -> %s" name
-           (type_to_string v.ret_typ))
+      print_endline @@ Printf.sprintf "%s -> %s" name (type_to_string v.ret_typ))
     t

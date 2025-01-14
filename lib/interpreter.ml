@@ -6,6 +6,8 @@ open Type_error
 open Type_checker
 open Context
 
+exception Exec_error of string
+
 let ( let* ) res f = match res with Ok x -> f x | Error rep -> propagate rep
 
 type value = VInt of int | VBool of bool | VObj of Env.t | VNull
@@ -44,14 +46,42 @@ let rec update_args calling_env env (params : (symbol * loc) list) initial_args
       | Obj attrs ->
           Env.add env (Sym obj_name)
             { sym = Sym obj_name; typ = param_loc.typ; data = Obj attrs }
-      | _ -> failwith "err");
+      | _ -> raise (Exec_error "update_args.1"));
       let _ = Env.rem calling_env psym
       and _ = Env.rem calling_env (Sym obj_name) in
       update_args calling_env env prs ars
   | _ :: ars, _ :: prs -> update_args calling_env env prs ars
-  | _, _ -> failwith "err"
+  | _, _ -> raise (Exec_error "update_args.2")
 
-let rec eval_expr ctx env expr =
+let rec exec_prog ctx = exec_seq ctx ctx.globals ctx.main
+
+and eval_data ctx env data =
+  match data with
+  | Obj attrs ->
+      let mapped_attrs = Env.create () in
+      Hashtbl.iter
+        (fun attr (typ, data) ->
+          Env.add mapped_attrs attr { typ; data; sym = attr })
+        attrs;
+      VObj mapped_attrs
+  | Expr expr -> eval_expr ctx env expr
+  | No_data -> VNull
+
+and value_to_string ctx env = function
+  | VNull -> "null"
+  | VInt n -> Printf.sprintf "%d" n
+  | VBool b -> Printf.sprintf "%s" (if b then "true" else "false")
+  | VObj obj ->
+      let res = "{\n" in
+      Env.iter
+        (fun (Sym name) v ->
+          let sdata = value_to_string ctx env (eval_data ctx env v.data) in
+          let _ = res ^ Printf.sprintf "\t%s -> %s\n" name sdata in
+          ())
+        obj;
+      res ^ "}"
+
+and eval_expr ctx env expr =
   let eao = eval_arithmetic_op ctx env
   and eco = eval_comparison_op ctx env
   and elo = eval_logic_op ctx env
@@ -71,7 +101,7 @@ let rec eval_expr ctx env expr =
   | Neg e -> (
       match eexpr e with
       | VInt n -> VInt (-n)
-      | _ -> failwith "Unreachable : neg expr is ill-typed")
+      | _ -> raise (Exec_error "eval_expr.1"))
   (* Equality operations *)
   | Eq (e1, e2) -> eval_equality ctx env e1 e2 true
   | Neq (e1, e2) -> eval_equality ctx env e1 e2 false
@@ -83,7 +113,7 @@ let rec eval_expr ctx env expr =
          and in the interpreter). *)
       match type_expr ctx env e with
       | Ok typ -> if t = typ then VBool true else VBool false
-      | Error _ -> failwith "Unreachable : expr is ill typed")
+      | Error _ -> raise (Exec_error "eval_expr.2"))
   | Lne (e1, e2) -> eco e1 e2 ( < )
   | Leq (e1, e2) -> eco e1 e2 ( <= )
   | Gne (e1, e2) -> eco e1 e2 ( > )
@@ -93,17 +123,19 @@ let rec eval_expr ctx env expr =
   | Not e -> (
       match eexpr e with
       | VBool b -> VBool (b = false)
-      | _ -> failwith "Unreachable : not expr is ill-typed")
+      | _ -> raise (Exec_error "eval_expr.3"))
   | Call (caller, callee, args) -> eval_call ctx env caller callee args
   | Inst (callee, args) ->
       let this_symbol = make_this_symbol () in
-      Env.add env this_symbol { sym = this_symbol; data = No_data; typ = Cls callee };
+      Env.add env this_symbol
+        { sym = this_symbol; data = No_data; typ = Cls callee };
       let _ = eval_call ctx env this_symbol callee args in
       let this_loc = Option.get @@ Env.get env this_symbol in
       let v = eval_data ctx env this_loc.data in
       let _ = Env.rem env this_symbol in
       v
-  | StaticCall (class_type, callee, args) -> eval_static_call ctx env class_type callee args
+  | StaticCall (class_type, callee, args) ->
+      eval_static_call ctx env class_type callee args
   | Cast (expr, _) -> eval_expr ctx env expr
   | StaticAttr (_, _) -> VNull
 
@@ -116,16 +148,18 @@ and eval_args ctx env params args =
         and psym, ploc = pr in
         Env.add acc psym { sym = psym; typ = ploc.typ; data = new_data };
         eval_args_loop prs ars acc
-    | _, _ -> failwith "Params/args are ill-typed."
+    | _, _ -> raise (Exec_error "eval_args")
   in
   eval_args_loop params (List.rev args) (Env.create ())
 
 and eval_call ctx env caller callee args =
   let copy_without_caller env =
     let res = Env.create () in
-    Env.iter (fun k v ->
-      let Sym n1, Sym n2 = k, caller in
-      if n1 <> n2 then Env.add res k v) env;
+    Env.iter
+      (fun k v ->
+        let Sym n1, Sym n2 = (k, caller) in
+        if n1 <> n2 then Env.add res k v)
+      env;
     res
   in
   let var = Result.get_ok @@ get_variable ctx env caller in
@@ -136,10 +170,9 @@ and eval_call ctx env caller callee args =
 
       let args_env = eval_args ctx env meth.params args in
       let calling_env =
-        Option.get
-        @@ Env.merge [ args_env; copy_without_caller ctx.globals ]
+        Option.get @@ Env.merge [ args_env; copy_without_caller ctx.globals ]
       in
-      Env.add calling_env (Sym "this") 
+      Env.add calling_env (Sym "this")
         { sym = Sym "this"; typ = Cls class_symbol; data = var.data };
       let res = exec_seq ctx calling_env meth.code in
 
@@ -148,13 +181,13 @@ and eval_call ctx env caller callee args =
       let this_loc = Option.get @@ Env.get calling_env (Sym "this") in
       Env.add env caller this_loc;
 
-      Env.iter (fun k v ->
-        if Env.get ctx.globals k <> None then
-          Env.add ctx.globals k v
-      ) calling_env;
+      Env.iter
+        (fun k v ->
+          if Env.get ctx.globals k <> None then Env.add ctx.globals k v)
+        calling_env;
 
       res
-  | _ -> failwith "err"
+  | _ -> raise (Exec_error "eval_call")
 
 and eval_static_call ctx env typ callee args =
   match typ with
@@ -164,10 +197,7 @@ and eval_static_call ctx env typ callee args =
 
       let args_env = eval_args ctx env meth.params args in
 
-      let calling_env =
-        Option.get
-        @@ Env.merge [ args_env; ctx.globals ]
-      in
+      let calling_env = Option.get @@ Env.merge [ args_env; ctx.globals ] in
       let res = exec_seq ctx calling_env meth.code in
 
       update_args calling_env env meth.params args;
@@ -175,8 +205,7 @@ and eval_static_call ctx env typ callee args =
       Env.iter (fun k v -> Env.add ctx.globals k v) calling_env;
 
       res
-  | _ -> failwith "err"
-
+  | _ -> raise (Exec_error "eval_static_call")
 
 and eval_equality ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
@@ -189,7 +218,7 @@ and eval_equality ctx env e1 e2 op =
       | Attr (Sym o1, Sym a1), Attr (Sym o2, Sym a2) ->
           VBool ((o1 = o2 && a1 = a2) = op)
       | _, _ -> VBool (op = false))
-  | _ -> failwith "Unreachable : eq expr is ill typed"
+  | _ -> raise (Exec_error "eval_equality")
 
 and eval_structural_equality_op ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
@@ -211,25 +240,25 @@ and eval_structural_equality_op ctx env e1 e2 op =
           | None -> ())
         a1;
       VBool !res
-  | _ -> failwith "Unreachable : eq expr is ill typed"
+  | _ -> raise (Exec_error "eval_structural_equality")
 
 and eval_arithmetic_op ctx env e1 e2 (op : int -> int -> int) =
   let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
   match (v1, v2) with
   | VInt a, VInt b -> VInt (op a b)
-  | _ -> failwith "Unreachable : bin op expr is ill-typed"
+  | _ -> raise (Exec_error "eval_arithmetic_op")
 
 and eval_comparison_op ctx env e1 e2 op =
   let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
   match (v1, v2) with
   | VInt a, VInt b -> VBool (op a b)
-  | _ -> failwith "Unreachable : bin op expr is ill-typed"
+  | _ -> raise (Exec_error "eval_comparison_op")
 
 and eval_logic_op ctx env e1 e2 op =
   let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
   match (v1, v2) with
   | VBool a, VBool b -> VBool (op a b)
-  | _ -> failwith "Unreachable : bin op expr is ill-typed"
+  | _ -> raise (Exec_error "eval_logic_op")
 
 and eval_variable ctx env sym =
   eval_data ctx env (Result.get_ok @@ get_variable_data ctx env sym)
@@ -257,39 +286,7 @@ and is_same_value ctx env v1 v2 =
           | None -> ())
         a;
       !res
-  | _ -> failwith "Unreachable : eq expr is ill typed"
-
-and eval_data ctx env data =
-  match data with
-  | Obj attrs ->
-      let mapped_attrs = Env.create () in
-      Hashtbl.iter
-        (fun attr (typ, data) ->
-          Env.add mapped_attrs attr { typ; data; sym = attr })
-        attrs;
-      VObj mapped_attrs
-  | Expr expr -> eval_expr ctx env expr
-  | No_data -> VNull
-
-and exec_seq ctx env seq =
-  match seq with
-  | [] -> VNull
-  | instr :: s -> (
-      match exec_instr ctx env instr with VNull -> exec_seq ctx env s | v -> v)
-
-and value_to_string ctx env = function
-  | VNull -> "null"
-  | VInt n -> Printf.sprintf "%d" n
-  | VBool b -> Printf.sprintf "%s" (if b then "true" else "false")
-  | VObj obj ->
-      let res = "{\n" in
-      Env.iter
-        (fun (Sym name) v ->
-          let sdata = value_to_string ctx env (eval_data ctx env v.data) in
-          let _ = res ^ Printf.sprintf "\t%s -> %s\n" name sdata in
-          ())
-        obj;
-      res ^ "}"
+  | _ -> raise (Exec_error "is_same_value")
 
 and exec_instr ctx env instr =
   match instr with
@@ -299,7 +296,7 @@ and exec_instr ctx env instr =
   | If (cond, s1, s2) -> (
       match eval_expr ctx env cond with
       | VBool b -> if b then exec_seq ctx env s1 else exec_seq ctx env s2
-      | _ -> failwith "Unreachable : condition is ill-typed")
+      | _ -> raise (Exec_error "exec_instr.1"))
   | While (cond, seq) -> (
       match eval_expr ctx env cond with
       | VBool b ->
@@ -307,13 +304,13 @@ and exec_instr ctx env instr =
             let v = exec_seq ctx env seq in
             if v = VNull then exec_instr ctx env instr else v
           else VNull
-      | _ -> failwith "Unreachable : condition is ill-typed")
+      | _ -> raise (Exec_error "exec_instr.2"))
   | Set (Loc symbol, expr) -> (
       let new_data = value_to_data (eval_expr ctx env expr) in
       match Env.get ctx.globals symbol with
       | None -> (
           match Env.get env symbol with
-          | None -> failwith "Unreachable : unable to find loc"
+          | None -> raise (Exec_error "exec_instr.3")
           | Some v ->
               Env.add env symbol { typ = v.typ; sym = v.sym; data = new_data };
               VNull)
@@ -327,14 +324,14 @@ and exec_instr ctx env instr =
         | Obj attrs -> (
             match get_attribute ctx env obj_sym attr_sym with
             | Ok attr -> Hashtbl.replace attrs attr.sym (attr.typ, new_data)
-            | _ -> failwith "no")
-        | _ -> failwith "no"
+            | _ -> raise (Exec_error "exec_instr.4"))
+        | _ -> raise (Exec_error "exec_instr.5")
       in
       let new_data = value_to_data (eval_expr ctx env expr) in
       match Env.get ctx.globals obj_sym with
       | None -> (
           match Env.get env obj_sym with
-          | None -> failwith "Unreachable : unable to find loc"
+          | None -> raise (Exec_error "exec_instr.6")
           | Some obj ->
               update_attribute env obj new_data;
               VNull)
@@ -348,4 +345,10 @@ and exec_instr ctx env instr =
   | Init (sym, typ, expr) ->
       Env.add env sym { sym; typ; data = Expr expr };
       exec_instr ctx env (Set (Loc sym, expr))
-  | _ -> failwith "Invalid syntax"
+  | _ -> raise (Exec_error "exec_instr.7")
+
+and exec_seq ctx env seq =
+  match seq with
+  | [] -> VNull
+  | instr :: s -> (
+      match exec_instr ctx env instr with VNull -> exec_seq ctx env s | v -> v)
