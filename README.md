@@ -188,48 +188,47 @@ method int test() { /* ok : both branches do not return but a the method always 
 
 Below is a list of mandaroty features provided by the type checker :
 
-  - **(M) Detect if the user is trying to access an attribute that does not belong to an object.**
-  - **(M) Detect if the user is trying to access an attribute/method of a non-object location.**
-  - **(M) Detect if a void method returns.**
-  - **(M) Detect if an expression is ill-typed.**
-  - **(M) Detect if a statement is ill typed.**
-  - **(M) Detect if a given symbol does not correspond to a location. (see extension for details)**
+  - (M) Detect if the user is trying to access an attribute that does not belong to an object.
+  - (M) Detect if the user is trying to access an attribute/method of a non-object location.
+  - (M) Detect if a void method returns.
+  - (M) Detect if an expression is ill-typed.
+  - (M) Detect if a statement is ill typed.
+  - (M) Detect if a given symbol does not correspond to a location. (see extension for details)
 
 Every other features of the type checker are extensions. The type checker recursivelly travels
-a whole branch of the program and if at some node, some "basic" type error is found, it provides
-details of the error, according to the context.
+a whole branch of the program and if at some node, some "basic" type error is found, it recursivelly
+provides details of the error, according to the context.
 
 Below is a list of object oriented static checking features :
 
-  - Detect if a user forgets to define a contructor for a class.
-  - Detect if the user tries to instantiate a class without any defined constructor.
-  - Detect if a the argument of a print statement is an int.
+  - (E) Detect if a user forgets to define a contructor for a class.
+  - (E) Detect if the user tries to instantiate a class without any defined constructor.
 
 Then a list of method/method calling checking features :
-  - Detect if the user tries to call a method with too much arguments.
-  - Detect if the user tries to call a method missing some arguments.
-  - Detect if a return statement is missing in a typed method.
-  - Detect if a given argument type correspond to the associated parameter type.
-  - Detect ill typed methods.
+  - (E) Detect if the user tries to call a method with too much arguments.
+  - (E) Detect if the user tries to call a method missing some arguments.
+  - (E) Detect if a method that should return does not.
+  - (E) Detect if a given argument type correspond to the associated parameter type.
+  - (E) Detect ill typed methods.
 
 A list of features of the type checker related to branching/return statements :
 
-  - Detect if both branches of an if statement do not return a value of the same type.
-  - Detect if only one branch of an if statement returns a value.
-  - Detect if a method body contains multiple sequential return statements.
-  - Detect code written after a block of instructions that will surelly return. 
-  - Detect if the return type of a method correspond to returned values in its body.
-  - Detect if a branch of an if statement is ill typed.
+  - (E) Detect if both branches of an if statement do not return a value of the same type.
+  - (E) Detect if only one branch of an if statement returns a value.
+  - (E) Detect if a method body contains multiple sequential return statements.
+  - (E) Detect code written after a block of instructions that will surelly return. (specific dead code)
+  - (E) Detect if the return type of a method correspond to returned values in its body.
+  - (E) Detect if a branch of an if statement is ill typed.
 
 Finally, some other generic checking features :
 
-  - Detect if types that are either user-defined or built-in.
-  - Detect if some symbol references different locations in a block of instructions.
-    (while statements are bugged : I did not have time to handle this specific case)
-  - Precises if the left/right hand side operand of an expression is ill-typed.
-  - Detect if a statement condition expression is a typed as a boolean.
-  - Detect set statements where the left hand side operand type does not correspond
+  - (E) Detect if types that are either user-defined or built-in.
+  - (E) Detect if some symbol references different locations in a block of instructions.
+  - (E) Precises if the left/right hand side operand of an expression is ill-typed.
+  - (E) Detect if a statement condition expression is a typed as a boolean.
+  - (E) Detect set statements where the left hand side operand type does not correspond
     to the variable type.
+  - (E) Detect if a the argument of a print statement is an int.
 
 ### Interpreter
 

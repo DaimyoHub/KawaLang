@@ -2,6 +2,7 @@ open Lang
 open Lexing
 open Context
 open Syntax_error
+open Interpreter
 
 let get_position lexbuf =
   let pos = lexbuf.lex_curr_p in
@@ -13,7 +14,8 @@ let _ =
   let prog =
     try Parser.program Lexer.token lexbuf with
     | Parser.Error -> failwith (get_position lexbuf)
-    | Missing_semi -> failwith (Printf.sprintf "Missing semicolon : %s" (get_position lexbuf))
+    | Missing_semi ->
+        failwith (Printf.sprintf "Missing semicolon : %s" (get_position lexbuf))
   in
 
   (match Type_checker.check_seq prog prog.globals Void prog.main with
@@ -27,4 +29,7 @@ let _ =
           let _ = Type_checker.check_method prog cls meth in
           ())
         cls.meths)
-    prog.classes
+    prog.classes;
+
+  let _ = exec_seq prog prog.globals prog.main in
+  ()

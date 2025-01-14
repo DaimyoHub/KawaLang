@@ -68,8 +68,10 @@ let pprint_symbol_resolv err =
   | Class_not_found (Sym s) ->
       fmt "Symbol '%s' does not correspond to a class.\n" s
   | Loc_not_found (env, Sym s) ->
-      let Sym ncn = find_nearest_coherent_symbol env (Sym s) in
-      fmt "Symbol '%s' does not correspond to any location. Did you mean '%s' ?\n" s ncn
+      let (Sym ncn) = find_nearest_coherent_symbol env (Sym s) in
+      fmt
+        "Symbol '%s' does not correspond to any location. Did you mean '%s' ?\n"
+        s ncn
   | Class_without_ctor (Sym s) ->
       fmt "Constructor of the class '%s' is not defined.\n" s
   | Method_not_in_class (Sym c, Sym m) ->
@@ -83,7 +85,7 @@ let pprint_symbol_resolv err =
 let pprint rep =
   let fmt = Printf.sprintf in
   match rep.kind with
-  | Sym_res_err err -> pprint_symbol_resolv err 
+  | Sym_res_err err -> pprint_symbol_resolv err
   | Lhs_ill_typed _ ->
       fmt "LHS has type %s. Expected type %s instead.\n" (ttos rep.obtained)
         (ttos rep.expected)

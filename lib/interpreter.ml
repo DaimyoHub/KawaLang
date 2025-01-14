@@ -4,6 +4,7 @@ open Symbol
 open Symbol_resolver
 open Type_error
 open Type_checker
+open Context
 
 let ( let* ) res f = match res with Ok x -> f x | Error rep -> propagate rep
 
@@ -19,6 +20,29 @@ let value_to_data = function
         table;
       Obj mapped_table
   | VNull -> No_data
+
+let rec update_args calling_env env (params : (symbol * loc) list) initial_args
+    =
+  match (initial_args, params) with
+  | [], [] -> ()
+  | Loc arg_sym :: ars, (psym, _) :: prs ->
+      let param_loc = Option.get @@ Env.get calling_env psym in
+      Env.add env arg_sym
+        { sym = arg_sym; typ = param_loc.typ; data = param_loc.data };
+      let _ = Env.rem calling_env psym and _ = Env.rem calling_env arg_sym in
+      update_args calling_env env prs ars
+  | Attr (Sym obj_name, _) :: ars, (psym, _) :: prs ->
+      let param_loc = Option.get @@ Env.get calling_env psym in
+      (match param_loc.data with
+      | Obj attrs ->
+          Env.add env (Sym obj_name)
+            { sym = Sym obj_name; typ = param_loc.typ; data = Obj attrs }
+      | _ -> failwith "err");
+      let _ = Env.rem calling_env psym
+      and _ = Env.rem calling_env (Sym obj_name) in
+      update_args calling_env env prs ars
+  | _ :: ars, _ :: prs -> update_args calling_env env prs ars
+  | _, _ -> failwith "err"
 
 let rec eval_expr ctx env expr =
   let eao = eval_arithmetic_op ctx env
@@ -63,7 +87,61 @@ let rec eval_expr ctx env expr =
       match eexpr e with
       | VBool b -> VBool (b = false)
       | _ -> failwith "Unreachable : not expr is ill-typed")
-  | _ -> failwith "TODO"
+  | Call (caller, callee, args) -> eval_call ctx env caller callee args
+  | _ -> VNull
+
+and eval_args ctx env params args =
+  let rec eval_args_loop params args acc =
+    match (params, args) with
+    | [], [] -> acc
+    | pr :: prs, ar :: ars ->
+        let new_data = value_to_data (eval_expr ctx env ar)
+        and psym, ploc = pr in
+        Env.add acc psym { sym = psym; typ = ploc.typ; data = new_data };
+        eval_args_loop prs ars acc
+    | _, _ -> failwith "Params/args are ill-typed."
+  in
+  eval_args_loop params args (Env.create ())
+
+and eval_call ctx env caller callee args =
+  let copy_without_caller env =
+    let res = Env.create () in
+    Env.iter (fun k v -> if k <> caller then Env.add res k v) env;
+    res
+  in
+  let copy_args args =
+    let rec loop args acc =
+      match args with x :: s -> loop s (x :: acc) | [] -> acc
+    in
+    loop args []
+  in
+  let var = Result.get_ok @@ get_variable ctx env caller in
+  match var.typ with
+  | Cls class_symbol ->
+      let cls = Result.get_ok @@ get_class ctx class_symbol in
+      let meth = Result.get_ok @@ get_method ctx cls callee in
+
+      let initial_args = copy_args args in
+      let args_env = eval_args ctx env meth.params args in
+      let this_env = Env.create () in
+      Env.add this_env (Sym "this")
+        { sym = Sym "this"; typ = Cls class_symbol; data = var.data };
+
+      let calling_env =
+        Option.get
+        @@ Env.merge [ args_env; this_env; copy_without_caller ctx.globals ]
+      in
+      let res = exec_seq ctx calling_env meth.code in
+
+      update_args calling_env env meth.params initial_args;
+
+      let this_loc = Option.get @@ Env.get calling_env (Sym "this") in
+      Env.add env caller this_loc;
+
+      Env.iter (fun k v -> Env.add ctx.globals k v) calling_env;
+
+      res
+  | _ -> failwith "err"
 
 and eval_equality ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
@@ -72,7 +150,7 @@ and eval_equality ctx env e1 e2 op =
   | VNull, VNull -> VBool op
   | VObj _, VObj _ -> (
       match (e1, e2) with
-      | Loc (Sym n1), Loc (Sym n2) -> VBool ((n1 = n2) = op)
+      | Loc (Sym n1), Loc (Sym n2) -> VBool (n1 = n2 = op)
       | Attr (Sym o1, Sym a1), Attr (Sym o2, Sym a2) ->
           VBool ((o1 = o2 && a1 = a2) = op)
       | _, _ -> VBool (op = false))

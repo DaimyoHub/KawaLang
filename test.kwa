@@ -1,31 +1,17 @@
-var bar test;
-var int i;
+var label a;
+var label b;
 
-
-class r {
+class label {
   attr int x;
 
-  method int hoho() {
-    return 0;
+  method void test(label x) {
+    x.x = 5;
   }
 }
 
-class foo extends r {
-  method void a() {}
-}
-
-class bar extends foo {
-  static method void func() {}
-
-  method void b() {}
-
-  method void bar() {}
-}
-
-
 main {
-  var foo x = cast (foo) test;
-  tes;
-  bar::func();
+  print(b.x);
+  a.test(b);
+  print(b.x);
 }
 

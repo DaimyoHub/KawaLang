@@ -30,12 +30,7 @@ module Make (V : Value) :
   type v = V.t
 
   let create () = Hashtbl.create 10
-
-  let add env k v =
-    try
-      let _ = Hashtbl.find env k in
-      Hashtbl.replace env k v
-    with _ -> Hashtbl.add env k v
+  let add env k v = Hashtbl.replace env k v
 
   let rem env k =
     try
@@ -69,11 +64,8 @@ end
 type data = No_data | Expr of expr | Obj of (symbol, typ * data) Hashtbl.t
 type loc = { sym : symbol; typ : Type.typ; data : data }
 
-let make_loc_with_data name typ data =
-  { sym = Sym name; typ = typ; data = data }
-
-let make_loc name typ =
-  { sym = Sym name; typ = typ; data = No_data }
+let make_loc_with_data name typ data = { sym = Sym name; typ; data }
+let make_loc name typ = { sym = Sym name; typ; data = No_data }
 
 let get_object_attributes loc =
   match loc.data with

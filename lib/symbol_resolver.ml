@@ -162,7 +162,8 @@ let get_static_attribute ctx typ attr_sym =
   | Cls class_symbol -> (
       let* cls = get_class ctx class_symbol in
       match Env.get cls.static_attrs attr_sym with
-      | None -> report_symbol_resolv (Loc_not_found (cls.static_attrs, attr_sym))
+      | None ->
+          report_symbol_resolv (Loc_not_found (cls.static_attrs, attr_sym))
       | Some attr -> allocate_then_get cls.static_attrs attr)
   | _ -> report None None Expected_class_type
 
