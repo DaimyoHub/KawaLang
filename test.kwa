@@ -1,17 +1,18 @@
-var label a;
-var label b;
+var list test;
+var list nil;
 
-class label {
+class list {
   attr int x;
+  attr list s;
 
-  method void test(label x) {
-    x.x = 5;
+  method void list(int x, list s) {
+    this.x = x;
+    this.s = s;
   }
 }
 
 main {
-  print(b.x);
-  a.test(b);
-  print(b.x);
+  test = new list(1, new list(2, nil));
+  var list h = test.s;
 }
 

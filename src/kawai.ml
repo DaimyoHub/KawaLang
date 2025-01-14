@@ -31,5 +31,4 @@ let _ =
         cls.meths)
     prog.classes;
 
-  let _ = exec_seq prog prog.globals prog.main in
-  ()
+  let _ = exec_seq prog prog.globals prog.main in ()

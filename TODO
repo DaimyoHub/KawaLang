@@ -1,3 +1,0 @@
-- Finir implémentation de static
-- Factoriser "allocate_then_get" dans symbol resolver
-- Implémenter interpréteur

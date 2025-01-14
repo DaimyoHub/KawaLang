@@ -10,6 +10,13 @@ let ( let* ) res f = match res with Ok x -> f x | Error rep -> propagate rep
 
 type value = VInt of int | VBool of bool | VObj of Env.t | VNull
 
+let make_this_symbol =
+  let counter = ref 0 in
+  fun _ ->
+    incr counter;
+    let cs = string_of_int !counter in
+    Sym (Printf.sprintf "@this%s" cs)
+
 let value_to_data = function
   | VInt n -> Expr (Cst n)
   | VBool b -> Expr (if b then True else False)
@@ -88,7 +95,17 @@ let rec eval_expr ctx env expr =
       | VBool b -> VBool (b = false)
       | _ -> failwith "Unreachable : not expr is ill-typed")
   | Call (caller, callee, args) -> eval_call ctx env caller callee args
-  | _ -> VNull
+  | Inst (callee, args) ->
+      let this_symbol = make_this_symbol () in
+      Env.add env this_symbol { sym = this_symbol; data = No_data; typ = Cls callee };
+      let _ = eval_call ctx env this_symbol callee args in
+      let this_loc = Option.get @@ Env.get env this_symbol in
+      let v = eval_data ctx env this_loc.data in
+      let _ = Env.rem env this_symbol in
+      v
+  | StaticCall (class_type, callee, args) -> eval_static_call ctx env class_type callee args
+  | Cast (expr, _) -> eval_expr ctx env expr
+  | StaticAttr (_, _) -> VNull
 
 and eval_args ctx env params args =
   let rec eval_args_loop params args acc =
@@ -101,19 +118,15 @@ and eval_args ctx env params args =
         eval_args_loop prs ars acc
     | _, _ -> failwith "Params/args are ill-typed."
   in
-  eval_args_loop params args (Env.create ())
+  eval_args_loop params (List.rev args) (Env.create ())
 
 and eval_call ctx env caller callee args =
   let copy_without_caller env =
     let res = Env.create () in
-    Env.iter (fun k v -> if k <> caller then Env.add res k v) env;
+    Env.iter (fun k v ->
+      let Sym n1, Sym n2 = k, caller in
+      if n1 <> n2 then Env.add res k v) env;
     res
-  in
-  let copy_args args =
-    let rec loop args acc =
-      match args with x :: s -> loop s (x :: acc) | [] -> acc
-    in
-    loop args []
   in
   let var = Result.get_ok @@ get_variable ctx env caller in
   match var.typ with
@@ -121,27 +134,49 @@ and eval_call ctx env caller callee args =
       let cls = Result.get_ok @@ get_class ctx class_symbol in
       let meth = Result.get_ok @@ get_method ctx cls callee in
 
-      let initial_args = copy_args args in
       let args_env = eval_args ctx env meth.params args in
-      let this_env = Env.create () in
-      Env.add this_env (Sym "this")
-        { sym = Sym "this"; typ = Cls class_symbol; data = var.data };
-
       let calling_env =
         Option.get
-        @@ Env.merge [ args_env; this_env; copy_without_caller ctx.globals ]
+        @@ Env.merge [ args_env; copy_without_caller ctx.globals ]
       in
+      Env.add calling_env (Sym "this") 
+        { sym = Sym "this"; typ = Cls class_symbol; data = var.data };
       let res = exec_seq ctx calling_env meth.code in
 
-      update_args calling_env env meth.params initial_args;
+      update_args calling_env env meth.params args;
 
       let this_loc = Option.get @@ Env.get calling_env (Sym "this") in
       Env.add env caller this_loc;
+
+      Env.iter (fun k v ->
+        if Env.get ctx.globals k <> None then
+          Env.add ctx.globals k v
+      ) calling_env;
+
+      res
+  | _ -> failwith "err"
+
+and eval_static_call ctx env typ callee args =
+  match typ with
+  | Cls class_symbol ->
+      let cls = Result.get_ok @@ get_class ctx class_symbol in
+      let meth = Result.get_ok @@ get_static_method cls callee in
+
+      let args_env = eval_args ctx env meth.params args in
+
+      let calling_env =
+        Option.get
+        @@ Env.merge [ args_env; ctx.globals ]
+      in
+      let res = exec_seq ctx calling_env meth.code in
+
+      update_args calling_env env meth.params args;
 
       Env.iter (fun k v -> Env.add ctx.globals k v) calling_env;
 
       res
   | _ -> failwith "err"
+
 
 and eval_equality ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
