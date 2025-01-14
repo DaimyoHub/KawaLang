@@ -1,5 +1,5 @@
 (executable
  (name kawai)
- (public_name kawa.interpreter)
+ (public_name kawai)
  (libraries kawa.lang)
  (package kawa))
