@@ -25,10 +25,17 @@ let value_to_data = function
   | VObj table ->
       let mapped_table = Hashtbl.create 5 in
       Env.iter
-        (fun attr loc -> Hashtbl.add mapped_table attr (loc.typ, loc.data))
+        (fun attr loc -> Hashtbl.add mapped_table attr (loc.typ, loc.data, loc.is_const))
         table;
       Obj mapped_table
   | VNull -> No_data
+
+let copy_args args =
+  let rec loop args acc =
+    match args with
+    | [] -> acc
+    | x :: s -> loop s (x :: acc)
+  in loop args []
 
 let rec update_args calling_env env (params : (symbol * loc) list) initial_args
     =
@@ -37,7 +44,12 @@ let rec update_args calling_env env (params : (symbol * loc) list) initial_args
   | Loc arg_sym :: ars, (psym, _) :: prs ->
       let param_loc = Option.get @@ Env.get calling_env psym in
       Env.add env arg_sym
-        { sym = arg_sym; typ = param_loc.typ; data = param_loc.data };
+        {
+          sym = arg_sym; 
+          typ = param_loc.typ;
+          data = param_loc.data;
+          is_const = param_loc.is_const
+        };
       let _ = Env.rem calling_env psym and _ = Env.rem calling_env arg_sym in
       update_args calling_env env prs ars
   | Attr (Sym obj_name, _) :: ars, (psym, _) :: prs ->
@@ -45,7 +57,12 @@ let rec update_args calling_env env (params : (symbol * loc) list) initial_args
       (match param_loc.data with
       | Obj attrs ->
           Env.add env (Sym obj_name)
-            { sym = Sym obj_name; typ = param_loc.typ; data = Obj attrs }
+            {
+              sym = Sym obj_name;
+              typ = param_loc.typ;
+              data = Obj attrs;
+              is_const = param_loc.is_const
+            }
       | _ -> raise (Exec_error "update_args.1"));
       let _ = Env.rem calling_env psym
       and _ = Env.rem calling_env (Sym obj_name) in
@@ -60,8 +77,8 @@ and eval_data ctx env data =
   | Obj attrs ->
       let mapped_attrs = Env.create () in
       Hashtbl.iter
-        (fun attr (typ, data) ->
-          Env.add mapped_attrs attr { typ; data; sym = attr })
+        (fun attr (typ, data, is_const) ->
+          Env.add mapped_attrs attr { typ; data; sym = attr; is_const })
         attrs;
       VObj mapped_attrs
   | Expr expr -> eval_expr ctx env expr
@@ -128,7 +145,7 @@ and eval_expr ctx env expr =
   | Inst (callee, args) ->
       let this_symbol = make_this_symbol () in
       Env.add env this_symbol
-        { sym = this_symbol; data = No_data; typ = Cls callee };
+        { sym = this_symbol; data = No_data; typ = Cls callee; is_const = false };
       let _ = eval_call ctx env this_symbol callee args in
       let this_loc = Option.get @@ Env.get env this_symbol in
       let v = eval_data ctx env this_loc.data in
@@ -146,7 +163,13 @@ and eval_args ctx env params args =
     | pr :: prs, ar :: ars ->
         let new_data = value_to_data (eval_expr ctx env ar)
         and psym, ploc = pr in
-        Env.add acc psym { sym = psym; typ = ploc.typ; data = new_data };
+        Env.add acc psym
+          {
+            sym = psym;
+            typ = ploc.typ;
+            data = new_data;
+            is_const = ploc.is_const
+          };
         eval_args_loop prs ars acc
     | _, _ -> raise (Exec_error "eval_args")
   in
@@ -168,15 +191,21 @@ and eval_call ctx env caller callee args =
       let cls = Result.get_ok @@ get_class ctx class_symbol in
       let meth = Result.get_ok @@ get_method ctx cls callee in
 
+      let initial_args = copy_args args in
       let args_env = eval_args ctx env meth.params args in
       let calling_env =
         Option.get @@ Env.merge [ args_env; copy_without_caller ctx.globals ]
       in
       Env.add calling_env (Sym "this")
-        { sym = Sym "this"; typ = Cls class_symbol; data = var.data };
+        {
+          sym = Sym "this";
+          typ = Cls class_symbol;
+          data = var.data;
+          is_const = var.is_const
+        };
       let res = exec_seq ctx calling_env meth.code in
 
-      update_args calling_env env meth.params args;
+      update_args calling_env env meth.params initial_args;
 
       let this_loc = Option.get @@ Env.get calling_env (Sym "this") in
       Env.add env caller this_loc;
@@ -207,41 +236,6 @@ and eval_static_call ctx env typ callee args =
       res
   | _ -> raise (Exec_error "eval_static_call")
 
-and eval_equality ctx env e1 e2 op =
-  match (eval_expr ctx env e1, eval_expr ctx env e2) with
-  | VInt a, VInt b -> VBool (a = b = op)
-  | VBool a, VBool b -> VBool (a = b = op)
-  | VNull, VNull -> VBool op
-  | VObj _, VObj _ -> (
-      match (e1, e2) with
-      | Loc (Sym n1), Loc (Sym n2) -> VBool (n1 = n2 = op)
-      | Attr (Sym o1, Sym a1), Attr (Sym o2, Sym a2) ->
-          VBool ((o1 = o2 && a1 = a2) = op)
-      | _, _ -> VBool (op = false))
-  | _ -> raise (Exec_error "eval_equality")
-
-and eval_structural_equality_op ctx env e1 e2 op =
-  match (eval_expr ctx env e1, eval_expr ctx env e2) with
-  | VInt a, VInt b -> VBool (a = b = op)
-  | VBool a, VBool b -> VBool (a = b = op)
-  | VNull, VNull -> VBool op
-  | VObj a1, VObj a2 ->
-      let res = ref true in
-      Env.iter
-        (fun k v1 ->
-          match Env.get a2 k with
-          | Some v2 ->
-              if
-                is_same_value ctx env
-                  (eval_data ctx env v1.data)
-                  (eval_data ctx env v2.data)
-                <> op
-              then res := false
-          | None -> ())
-        a1;
-      VBool !res
-  | _ -> raise (Exec_error "eval_structural_equality")
-
 and eval_arithmetic_op ctx env e1 e2 (op : int -> int -> int) =
   let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
   match (v1, v2) with
@@ -267,6 +261,41 @@ and eval_attribute ctx env obj_sym attr_sym =
   eval_data ctx env
     (Result.get_ok @@ get_attribute_data ctx env obj_sym attr_sym)
 
+and eval_equality ctx env e1 e2 op =
+  match (eval_expr ctx env e1, eval_expr ctx env e2) with
+  | VInt a, VInt b -> VBool (a = b = op)
+  | VBool a, VBool b -> VBool (a = b = op)
+  | VNull, VNull -> VBool op
+  | VObj _, VObj _ -> (
+      match (e1, e2) with
+      | Loc (Sym n1), Loc (Sym n2) -> VBool (n1 = n2 = op)
+      | Attr (Sym o1, Sym a1), Attr (Sym o2, Sym a2) ->
+          VBool ((o1 = o2 && a1 = a2) = op)
+      | _, _ -> VBool (op = false))
+  | _, _ -> raise (Exec_error "eval_equality")
+
+and eval_structural_equality_op ctx env e1 e2 op =
+  match (eval_expr ctx env e1, eval_expr ctx env e2) with
+  | VInt a, VInt b -> VBool (a = b = op)
+  | VBool a, VBool b -> VBool (a = b = op)
+  | VNull, VNull -> VBool op
+  | VObj a1, VObj a2 ->
+      let res = ref true in
+      Env.iter
+        (fun k v1 ->
+          match Env.get a2 k with
+          | Some v2 ->
+              if
+                is_same_value ctx env
+                  (eval_data ctx env v1.data)
+                  (eval_data ctx env v2.data)
+                <> op
+              then res := false
+          | None -> ())
+        a1;
+      VBool !res
+  | _, _ -> raise (Exec_error "eval_structural_equality")
+
 and is_same_value ctx env v1 v2 =
   match (v1, v2) with
   | VNull, VNull -> true
@@ -286,7 +315,7 @@ and is_same_value ctx env v1 v2 =
           | None -> ())
         a;
       !res
-  | _ -> raise (Exec_error "is_same_value")
+  | _ -> false
 
 and exec_instr ctx env instr =
   match instr with
@@ -305,6 +334,7 @@ and exec_instr ctx env instr =
             if v = VNull then exec_instr ctx env instr else v
           else VNull
       | _ -> raise (Exec_error "exec_instr.2"))
+  | SetConst (loc, expr) -> exec_instr ctx env (Set (loc, expr))
   | Set (Loc symbol, expr) -> (
       let new_data = value_to_data (eval_expr ctx env expr) in
       match Env.get ctx.globals symbol with
@@ -312,18 +342,29 @@ and exec_instr ctx env instr =
           match Env.get env symbol with
           | None -> raise (Exec_error "exec_instr.3")
           | Some v ->
-              Env.add env symbol { typ = v.typ; sym = v.sym; data = new_data };
+              Env.add env symbol
+                {
+                  typ = v.typ;
+                  sym = v.sym;
+                  data = new_data;
+                  is_const = v.is_const
+                };
               VNull)
       | Some v ->
           Env.add ctx.globals symbol
-            { typ = v.typ; sym = v.sym; data = new_data };
+            {
+              typ = v.typ; 
+              sym = v.sym; 
+              data = new_data; 
+              is_const = v.is_const 
+            };
           VNull)
   | Set (Attr (obj_sym, attr_sym), expr) -> (
       let update_attribute env obj new_data =
         match obj.data with
         | Obj attrs -> (
             match get_attribute ctx env obj_sym attr_sym with
-            | Ok attr -> Hashtbl.replace attrs attr.sym (attr.typ, new_data)
+            | Ok attr -> Hashtbl.replace attrs attr.sym (attr.typ, new_data, attr.is_const)
             | _ -> raise (Exec_error "exec_instr.4"))
         | _ -> raise (Exec_error "exec_instr.5")
       in
@@ -342,8 +383,8 @@ and exec_instr ctx env instr =
   | Ignore e ->
       let _ = eval_expr ctx env e in
       VNull
-  | Init (sym, typ, expr) ->
-      Env.add env sym { sym; typ; data = Expr expr };
+  | Init (sym, is_const, typ, expr) ->
+      Env.add env sym { sym; typ; data = Expr expr; is_const };
       exec_instr ctx env (Set (Loc sym, expr))
   | _ -> raise (Exec_error "exec_instr.7")
 

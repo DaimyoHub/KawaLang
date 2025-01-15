@@ -29,7 +29,8 @@
           "extends",    EXTENDS;
           "instanceof", INSTANCEOF;
           "cast",       CAST;
-          "static",     STATIC
+          "static",     STATIC;
+          "const",      CONST
         ];
       fun s ->
         try  Hashtbl.find h s

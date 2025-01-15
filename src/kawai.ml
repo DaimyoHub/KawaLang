@@ -9,14 +9,8 @@ let get_position lexbuf =
 
 let kawai file =
   let lexbuf = Lexing.from_channel (In_channel.open_text file) in
-  let prog =
-    try Parser.program Lexer.token lexbuf with
-    | Parser.Error ->
-        failwith (Printf.sprintf "Syntax error : %s" (get_position lexbuf))
-    | Missing_semi ->
-        failwith (Printf.sprintf "Missing semicolon : %s" (get_position lexbuf))
-  in
   try
+    let prog = Parser.program Lexer.token lexbuf in
     Type_checker.check_prog prog;
     Interpreter.exec_prog prog
   with
@@ -29,6 +23,12 @@ let kawai file =
       VNull
   | Interpreter.Exec_error pos ->
       print_endline (Printf.sprintf "Execution error : %s" pos);
+      VNull
+  | Parser.Error ->
+      print_endline (Printf.sprintf "Syntax error : %s" (get_position lexbuf));
+      VNull
+  | Missing_semi ->
+      print_endline (Printf.sprintf "Missing semicolon : %s" (get_position lexbuf));
       VNull
 
 let () =

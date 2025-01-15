@@ -16,7 +16,7 @@ let allocate_object_data ctx obj =
         No_data
     | Some cls -> (
         Env.iter
-          (fun s loc -> Hashtbl.add attrs s (loc.typ, loc.data))
+          (fun s loc -> Hashtbl.add attrs s (loc.typ, loc.data, loc.is_const))
           cls.attrs;
         match cls.super with
         | None -> Obj attrs

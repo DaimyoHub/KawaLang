@@ -84,7 +84,12 @@ let get_variable ctx env symbol =
   let allocate_then_get env var =
     if is_object_allocated var = false then (
       let allocated_obj =
-        { sym = var.sym; typ = var.typ; data = allocate_object_data ctx var }
+        {
+          sym = var.sym;
+          typ = var.typ;
+          data = allocate_object_data ctx var;
+          is_const = var.is_const
+        }
       in
       Env.add env var.sym allocated_obj;
       Ok allocated_obj)
@@ -101,7 +106,12 @@ let silent_get_variable ctx env symbol =
   let allocate_then_get env var =
     if is_object_allocated var = false then (
       let allocated_obj =
-        { sym = var.sym; typ = var.typ; data = allocate_object_data ctx var }
+        {
+          sym = var.sym;
+          typ = var.typ;
+          data = allocate_object_data ctx var;
+          is_const = var.is_const
+        }
       in
       Env.add env var.sym allocated_obj;
       Ok allocated_obj)
@@ -129,9 +139,14 @@ let get_attribute ctx env loc_sym attr_sym =
   let allocate_then_get env var =
     if is_object_allocated var = false then (
       let alloc_obj =
-        { sym = var.sym; typ = var.typ; data = allocate_object_data ctx var }
+        {
+          sym = var.sym;
+          typ = var.typ;
+          data = allocate_object_data ctx var;
+          is_const = var.is_const
+        }
       in
-      Hashtbl.replace env var.sym (var.typ, alloc_obj.data);
+      Hashtbl.replace env var.sym (var.typ, alloc_obj.data, var.is_const);
       Ok alloc_obj)
     else Ok var
   in
@@ -140,8 +155,8 @@ let get_attribute ctx env loc_sym attr_sym =
       match (var.typ, var.data) with
       | Cls _, Obj attrs -> (
           try
-            let typ, data = Hashtbl.find attrs attr_sym in
-            let loc = { typ; data; sym = attr_sym } in
+            let typ, data, is_const = Hashtbl.find attrs attr_sym in
+            let loc = { typ; data; sym = attr_sym; is_const } in
             allocate_then_get attrs loc
           with _ ->
             report_symbol_resolv (Attribute_not_found (loc_sym, attr_sym)))
@@ -152,7 +167,12 @@ let get_static_attribute ctx typ attr_sym =
   let allocate_then_get env var =
     if is_object_allocated var = false then (
       let allocated_obj =
-        { sym = var.sym; typ = var.typ; data = allocate_object_data ctx var }
+        {
+          sym = var.sym;
+          typ = var.typ;
+          data = allocate_object_data ctx var;
+          is_const = var.is_const
+        }
       in
       Env.add env var.sym allocated_obj;
       Ok allocated_obj)
@@ -192,6 +212,10 @@ let get_location_symbol loc_kind =
       let (Sym obj_name) = obj and (Sym attr_name) = attr in
       Ok (Sym (obj_name ^ "." ^ attr_name))
   | _ -> report_symbol_resolv Not_loc
+
+let is_location_const ctx env loc_kind =
+  let* loc = get_location ctx env loc_kind in
+  Ok loc.is_const
 
 (*
  * get_variable_type ctx env symbol
@@ -313,8 +337,8 @@ let get_attributes ctx env symbol =
   | Obj attrs ->
       Ok
         (Hashtbl.fold
-           (fun sym (typ, data) acc ->
-             Env.add acc sym { sym; typ; data };
+           (fun sym (typ, data, is_const) acc ->
+             Env.add acc sym { sym; typ; data; is_const };
              acc)
            attrs (Env.create ()))
   | _ -> report None (Some obj.typ) (Loc_type_not_user_def obj.sym)

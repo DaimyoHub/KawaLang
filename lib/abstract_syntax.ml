@@ -41,8 +41,9 @@ type expr =
 type instr =
   | Print of expr
   | Set of expr * expr
+  | SetConst of expr * expr
   | If of expr * instr list * instr list
   | While of expr * instr list
   | Ret of expr
   | Ignore of expr
-  | Init of symbol * typ * expr
+  | Init of symbol * bool * typ * expr

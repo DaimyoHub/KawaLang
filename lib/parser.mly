@@ -8,6 +8,11 @@
   open Type
   open Syntax_error
 
+  let make_const c =
+    match c with
+    | None -> false
+    | Some _ -> true
+
   let env_of_list l =
     List.fold_left (
       fun acc x ->
@@ -50,17 +55,38 @@
 %token STATIC
 %token DOUBLE_COL
 
-%token PLUS MINUS TIMES DIVIDES MODULO 
-%token AND OR NOT
-%token EQUALS NOT_EQUALS LESS LESS_EQUALS GREATER GREATER_EQUALS STRUCT_EQ STRUCT_NEQ
+%token PLUS
+%token MINUS
+%token TIMES
+%token DIVIDES
+%token MODULO 
+%token AND
+%token OR
+%token NOT
+%token EQUALS
+%token NOT_EQUALS
+%token LESS
+%token LESS_EQUALS
+%token GREATER
+%token GREATER_EQUALS
+%token STRUCT_EQ
+%token STRUCT_NEQ
 
-%token LPAR RPAR BEGIN END SEMI
+%token LPAR
+%token RPAR
+%token BEGIN
+%token END
+%token SEMI
 %token COMMA
 %token DOT
 %token PRINT
 %token EOF
-%token IF ELSE WHILE RETURN
+%token IF
+%token ELSE
+%token WHILE
+%token RETURN
 %token TRUE FALSE
+%token CONST
 
 %token <string> IDENT
 %token VAR
@@ -107,27 +133,30 @@ typ:
 
 semi: SEMI { () };
 
+const:
+| CONST { () }
+
 var_init:
-| VAR typ IDENT SET error { raise Missing_semi }
-| VAR t=typ name=IDENT SET e=expr semi
+| VAR option(const) typ IDENT SET error { raise Missing_semi }
+| VAR c=option(const) t=typ name=IDENT SET e=expr semi
     {
-      (Sym name, t, e)
+      (Sym name, make_const c, t, e)
     }
 ;
 
 var_decl:
-| VAR typ IDENT error { raise Missing_semi }
-| VAR t=typ name=IDENT semi
+| VAR option(const) typ IDENT error { raise Missing_semi }
+| VAR c=option(const) t=typ name=IDENT semi
     {
-      make_loc name t
+      make_loc name t c
     }
 ;
 
 attr_decl:
-| ATTR typ IDENT error { raise Missing_semi }
-| ATTR t=typ name=IDENT semi
+| ATTR option(const) typ IDENT error { raise Missing_semi }
+| ATTR c=option(const) t=typ name=IDENT semi
     {
-      make_loc name t
+      make_loc name t c
     }
 ;
 
@@ -138,9 +167,9 @@ static_attr_decl:
 *)
 
 param:
-| t=typ name=IDENT
+| c=option(const) t=typ name=IDENT
     {
-      Sym name, make_loc name t
+      Sym name, make_loc name t c
     }
 ;
 
@@ -217,7 +246,7 @@ class_def:
 instr:
 | v=var_init
     {
-      let s, t, e = v in Init (s, t, e)
+      let s, c, t, e = v in Init (s, c, t, e)
     }
 | PRINT LPAR expr RPAR error { raise Missing_semi }
 | PRINT LPAR e=expr RPAR semi
@@ -270,9 +299,18 @@ args:
 ;
 
 object_expr:
-| name=IDENT                                        { Loc (Sym name) }
-| THIS                                              { Loc (Sym "this") }
-| NEW name=IDENT LPAR al=separated_list(COMMA, expr) RPAR { Inst (Sym name, al) }
+| name=IDENT
+    {
+      Loc (Sym name)
+    }
+| THIS
+    {
+      Loc (Sym "this")
+    }
+| NEW name=IDENT LPAR al=separated_list(COMMA, expr) RPAR
+    {
+      Inst (Sym name, al)
+    }
 | THIS DOT attr_or_meth=IDENT args=option(args)
     {
       match args with
@@ -291,42 +329,40 @@ object_expr:
         None   -> StaticAttr (t, Sym attr_or_meth)
       | Some l -> StaticCall (t, Sym attr_or_meth, l)
     }
-| c=cast_expr                                       { c }
+| c=cast_expr { c }
 ;
 
 cast_expr:
-| CAST LPAR t=typ RPAR e=object_expr                { Cast (e, t) }
+| CAST LPAR t=typ RPAR e=object_expr { Cast (e, t) }
 ;
 
 paren_expr:
-| LPAR e=expr RPAR                                  { e }
+| LPAR e=expr RPAR { e }
 ;
 
 expr:
-| n=NUM                                             { Cst (n) }
-| TRUE                                              { True }
-| FALSE                                             { False }
-| o=object_expr                                     { o }
-| e=paren_expr                                      { e }
-| lhs=expr     PLUS   rhs=expr                      { Add (lhs, rhs) }
-| lhs=expr    TIMES    rhs=expr                     { Mul (lhs, rhs) }
-| lhs=expr   DIVIDES   rhs=expr                     { Div (lhs, rhs) }
-| lhs=expr    MODULO   rhs=expr                     { Mod (lhs, rhs) }
-| lhs=expr    MINUS    rhs=expr                     { Min (lhs, rhs) }
-| MINUS e=expr                                      { Neg e }
-
-| lhs=expr    EQUALS   rhs=expr                     { Eq  (lhs, rhs) }
-| lhs=expr  NOT_EQUALS rhs=expr                     { Neq (lhs, rhs) }
-| lhs=expr   STRUCT_EQ rhs=expr                     { StructEq(lhs, rhs) }
-| lhs=expr  STRUCT_NEQ rhs=expr                     { StructNeq(lhs, rhs) }
-| e=expr    INSTANCEOF t=typ                        { InstanceOf (e, t) } 
-| lhs=expr     LESS    rhs=expr                     { Lne (lhs, rhs) }
-| lhs=expr LESS_EQUALS rhs=expr                     { Leq (lhs, rhs) }
-| lhs=expr    GREATER  rhs=expr                     { Gne (lhs, rhs) }
-| lhs=expr GREATER_EQUALS rhs=expr                  { Geq (lhs, rhs) }
-
-| lhs=expr     AND     rhs=expr                     { Con (lhs, rhs) }
-| lhs=expr      OR     rhs=expr                     { Dis (lhs, rhs) }
-| NOT e=expr                                        { Not e }
+| e=paren_expr                      { e }
+| o=object_expr                     { o }
+| n=NUM                             { Cst (n) }
+| TRUE                              { True }
+| FALSE                             { False }
+| lhs=expr     PLUS       rhs=expr  { Add (lhs, rhs) }
+| lhs=expr     TIMES      rhs=expr  { Mul (lhs, rhs) }
+| lhs=expr    DIVIDES     rhs=expr  { Div (lhs, rhs) }
+| lhs=expr    MODULO      rhs=expr  { Mod (lhs, rhs) }
+| lhs=expr    MINUS       rhs=expr  { Min (lhs, rhs) }
+| lhs=expr    EQUALS      rhs=expr  { Eq  (lhs, rhs) }
+| lhs=expr   NOT_EQUALS   rhs=expr  { Neq (lhs, rhs) }
+| lhs=expr   STRUCT_EQ    rhs=expr  { StructEq(lhs, rhs) }
+| lhs=expr   STRUCT_NEQ   rhs=expr  { StructNeq(lhs, rhs) }
+| e=expr    INSTANCEOF    t  = typ  { InstanceOf (e, t) } 
+| lhs=expr     LESS       rhs=expr  { Lne (lhs, rhs) }
+| lhs=expr   LESS_EQUALS  rhs=expr  { Leq (lhs, rhs) }
+| lhs=expr    GREATER     rhs=expr  { Gne (lhs, rhs) }
+| lhs=expr GREATER_EQUALS rhs=expr  { Geq (lhs, rhs) }
+| lhs=expr      AND       rhs=expr  { Con (lhs, rhs) }
+| lhs=expr       OR       rhs=expr  { Dis (lhs, rhs) }
+| MINUS e=expr                      { Neg e }
+| NOT e=expr                        { Not e }
 ;
 

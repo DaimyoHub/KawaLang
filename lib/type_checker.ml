@@ -166,7 +166,7 @@ and check_method ctx (class_def : class_def) method_def =
   in
   let _ =
     Env.add mapped_params (Sym "this")
-      { sym = Sym "this"; typ = Cls class_def.sym; data = No_data }
+      { sym = Sym "this"; typ = Cls class_def.sym; data = No_data; is_const = false }
   in
   match check_seq ctx mapped_params method_def.ret_typ method_def.code with
   | Ok rt -> Ok rt
@@ -246,7 +246,7 @@ and check_instr ctx env exp instr =
           let* sym = get_location_symbol loc in
           report (Some (Cls class_symbol)) (Some t)
             (Not_obj_inst (sym, class_symbol)))
-  | Set (loc, e) -> (
+  | SetConst (loc, e) -> (
       let* t = get_location_type ctx env loc in
       match chk e t with
       | Ok _ -> Ok Void
@@ -255,6 +255,20 @@ and check_instr ctx env exp instr =
           if is_call_related_report rep then
             report None None (Set_ill_typed_without_info sym)
           else report (Some t) rep.obtained (Set_ill_typed (sym, e)))
+  | Set (loc, e) ->
+      let* is_const = is_location_const ctx env loc in
+      if is_const then
+        let* sym = get_location_symbol loc in
+        report None None (Const_set sym)
+      else (
+        let* t = get_location_type ctx env loc in 
+        match chk e t with
+        | Ok _ -> Ok Void
+        | Error rep ->
+            let* sym = get_location_symbol loc in
+            if is_call_related_report rep then
+              report None None (Set_ill_typed_without_info sym)
+            else report (Some t) rep.obtained (Set_ill_typed (sym, e)))
   | If (_, _, _) -> check_if_statement ctx env exp instr
   (* BUG : IF WE INIT A VARIABLE IN THE BODY OF A WHILE STATEMENT, IT PERSISTS IN
      THE ENV OF THE BODY CONTAINING THE WHILE STATEMENT *)
@@ -266,11 +280,11 @@ and check_instr ctx env exp instr =
   | Ignore e ->
       let* _ = type_expr ctx env e in
       Ok Void
-  | Init (sym, typ, expr) ->
+  | Init (sym, is_const, typ, expr) ->
       if Result.is_ok @@ silent_get_variable ctx env sym then
         report_symbol_resolv (Diff_locs_same_sym sym)
       else (
-        Env.add env sym { sym; typ; data = No_data };
+        Env.add env sym { sym; typ; data = No_data; is_const };
         check_instr ctx env exp (Set (Loc sym, expr)))
 
 (*
@@ -299,13 +313,13 @@ and check_if_statement ctx env exp instr =
         match check ctx env e exp with
         | Ok _ -> Ok exp
         | Error rep -> report (Some exp) rep.obtained Return_bad_type)
-    | Init (sym, typ, expr) :: s ->
+    | Init (sym, is_const, typ, expr) :: s ->
         if Result.is_ok @@ silent_get_variable ctx env sym then
           report_symbol_resolv (Diff_locs_same_sym sym)
         else (
-          Env.add env sym { sym; typ; data = No_data };
-          Env.add branch_env sym { sym; typ; data = No_data };
-          match check_instr ctx env exp (Set (Loc sym, expr)) with
+          Env.add env sym { sym; is_const; typ; data = No_data };
+          Env.add branch_env sym { sym; is_const; typ; data = No_data };
+          match check_instr ctx env exp (SetConst (Loc sym, expr)) with
           | Ok Void -> check_branch flag s exp
           | Ok _ -> failwith "Unreachable : check_if_statement.check_branch"
           | Error rep ->

@@ -45,6 +45,7 @@ type typ_err_kind =
   | Expected_object of symbol
   | Expected_class_type
   | Prohibited_cast
+  | Const_set of symbol
 
 type typ_err_report = {
   expected : typ option;
@@ -145,6 +146,8 @@ let pprint rep =
   | Prohibited_cast ->
       fmt "Cast from type %s to type %s is prohibited.\n" (ttos rep.obtained)
         (ttos rep.expected)
+  | Const_set (Sym s) ->
+      fmt "Trying to mutate constant location '%s'.\n" s
 
 let report exp obt kind =
   let rep = { expected = exp; obtained = obt; kind } in

@@ -61,11 +61,20 @@ module Make (V : Value) :
           (raw x) (merge s)
 end
 
-type data = No_data | Expr of expr | Obj of (symbol, typ * data) Hashtbl.t
-type loc = { sym : symbol; typ : Type.typ; data : data }
+type data = No_data | Expr of expr | Obj of (symbol, typ * data * bool) Hashtbl.t
+type loc = { sym : symbol; typ : Type.typ; data : data; is_const : bool }
 
-let make_loc_with_data name typ data = { sym = Sym name; typ; data }
-let make_loc name typ = { sym = Sym name; typ; data = No_data }
+let make_loc_with_data name typ data c = 
+  let const = match c with
+    | None -> false
+    | Some _ -> true
+  in { sym = Sym name; typ; data = data; is_const = const }
+
+let make_loc name typ c =
+  let const = match c with
+    | None -> false
+    | Some _ -> true
+  in { sym = Sym name; typ; data = No_data; is_const = const }
 
 let get_object_attributes loc =
   match loc.data with

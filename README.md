@@ -1,34 +1,10 @@
-# Kawa Language Interpreter
+# Kawa Language Interpreter : development report
 
 ## Description of the language
 
 Kawa is an object oriented toy programming language developed for a school
 project, as an introduction to applied programming language theory. The
 current implementation is a basic interpreter, with a static type checker.
-
-### Examples
-
-```
-class point {
-  attribute int x;
-  attribute int y;
-
-  method void point(int x, int y) {
-    this.x = x;
-    this.y = y
-  }
-
-  method int size() { 
-    return this.x + this.y
-  }
-}
-
-main {
-  var int p;
-  p = new point(1, 2);
-  print(p.size());
-}
-```
 
 ## Interpreter architecture
 
@@ -37,12 +13,33 @@ in three sequential parts :
 
   - Parsing & Structures loading
   - Static type-checking
-  - Code evaluation
+  - Code evaluation/execution
 
-### Static type-checking
+That two last components strongly depend on the next one, which is permanently being
+used during the interpretating process :
+
+  - Symbol/name resolution
+
+### A general feedback
+
+I've spent a lot of time on this project because it really motivated me. If I had more time
+I would have probably tried to make the interpreter more elegant. My first idead was to generate
+a bytecode but it would have been too long, so I've just decided to use techniques learned in class.
+More generally, I would have given more of my development type to make structures more intuitive,
+the interface more uniform and to make the whole project work elegantly.
+
+I have spent half of my time on the static analysis (type checking, name resolution and analysis of
+return statements in branches), and the other half on the interpreter and the global project
+architecture.
+
+I'm quite satisfied of my own work, but above all, I know that there are a lot of things that could
+have been better designed (architecturally and algorithmically). I had to find a compromise between
+the schedule and the development of extensions/well designed features.
+
+### Static type checker
 
 The static type-checker of the language performs different actions. It basically 
-checks weather well-formed programs are semantically correct at a certain level
+checks that a syntactycally correct program is semantically correct at a certain level
 of guarantee. ("Well-typed programs do not go wrong"). To achieve this goal it
 performs different checking operations :
 
@@ -52,10 +49,6 @@ existing class ?"
   - Expression type check : "is this expression well-typed ?"
   - Instruction type check : "are expressions put at stake from this instruction
 well-typed ?"
-
-## Development report
-
-### Typechecker
 
 The typechecker performs two processes :
 
@@ -229,6 +222,58 @@ Finally, some other generic checking features :
   - (E) Detect set statements where the left hand side operand type does not correspond
     to the variable type.
   - (E) Detect if a the argument of a print statement is an int.
+  - (E) Detect if the user is trying to mutate a constant location.
+
+The trickyest parts of the type checker are below, if the type checker contains bugs, they are
+probably linked to these parts :
+
+  - The sequence of instructions checking process, especially the one dedicated to if
+    statements (see functions `exec_seq` and `exec_if_statement`).
+  - It is possible that a same type error report appears two or tree times on the output. It is
+    caused by the fact that a same error can appear at two different places in the code (in
+    this case it is not a bug), or by the fact that some checking processes report the same
+    error independently, or by the fact that I do not propagate some error silently (without
+    printing the report on the output). In this case, it is not a bug, because the error is
+    still reported and the checking process does not keep going, but it can be ugly.
+
+I have worked a lot on the type checker (at least 1/2 of the development time), to make it as
+exhaustive as possible and still permissive.
+
+### Symbol resolver
+
+Both type checker and interpreter strongly relate on the symbol resolver : it is a module
+that performs every location/context access (and sometimes, mutations). It is a component of the type
+checker, as it uses the type error report interface. Most of errors reported by the 
+symbol resolver are "symbol resolving errors", which are a specific kind of type errors.
+
+The symbol resolver sometimes mutates locations, for instance, when we are trying to acces 
+a location which is an instance of a class. It allows to safely try to access its attributes,
+because basically, one cannot access an arbitrary attribute of a declared but uninitialized
+object.
+
+Finally, the symbol resolver is probably the most important part of the type checker, as it
+allows the latter to check the coherence of expressions and instructions containing more
+complex data than just constants.
+
+Locations are either variables, or attributes, or static attributes.
+
+Below is a list of features provided by the symbol resolver :
+
+  - Get a class
+  - Check if a class is a super class for another
+  - Get a method from a class
+  - Get a static method
+  - Get the return type of a method
+  - Get the constructor of a class
+
+  - Get a location and allocate it if it is not yet
+  - Get a location symbol
+  - Get a location type
+  - Get a location data
+  - Get the set of attributes of a location
+
+As said before, each of these features are wrapped thanks to the type error report 
+mecanism, to allow performing its operation safely.
 
 ### Interpreter
 
@@ -242,7 +287,7 @@ project design. Below is a list of the ones I dealt with :
   - **Constructing a calling environment**
     During the whole development of the type checker, I dealt with "linear environments",
     more precisely, class instances were not seen as objects linked with an environment 
-    representing its attributes, but as simple variables, and to access their attributes,
+    representing their attributes, but as simple variables, and to access their attributes,
     I had to make them visible in the environement contaning the object. It was not a
     good design and I later decided to make things more accessible for the interpreter
     development.
@@ -270,21 +315,28 @@ project design. Below is a list of the ones I dealt with :
     To perform it, I first look for the object in the given environment, then I try to find
     the wanted attribute in its table of attributes.
 
+  - **Updating environment after call**
+    Figuring out how to update environments put at stake during a method call was also tricky.
+    I just decided to copy each location of the calling environment in its proper initial
+    location (globals, attributes...). It is quite naive but it does the work.
+
 ### List of extensions
 
-This interpreter of the Kawa language includes the following extensions :
+This interpreter of Kawa includes the following extensions :
 
   - See features of the type checker that are not mandatory.
   - [x] Cast expressions : `cast (class) expr`
   - [x] The instanceof operation : `expr instanceof class`
   - [x] Static methods (but not attributes because I did not have time to implement them)
   - [x] Declaration of variables with an initial value.
-  - [-] Declaration of variables everywhere in a block of instructions. (in the case of a while
+  - [x] Declaration of variables everywhere in a block of instructions. (in the case of a while
         block, it does not work properly. Local variables of the block will persist out of scope)
   - [x] Structural equality of locations.
   - [x] Telling when a semicolon is missing.
   - [x] When the user is trying to access a location that does not exist, it gives an error
-    message specifying a location's name that have to wanted type and that is almost
-    like the written symbol.
-  - [-] Immutable attributes.
+    message specifying a location's name that is almost like the written symbol. The algorithm
+    computes Levenshtein distances.
+  - [x] Immutable locations (var const type name = ...). The only tool that really does the job
+    for constant locations is the type checker, in the interpreter, I assume that, if we are
+    trying to mutate a location, then it is not constant.
 
