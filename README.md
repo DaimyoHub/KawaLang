@@ -2,6 +2,8 @@
 
 ## Contact
 
+The project is available of github : `githob.com/DaimyoHub/KawaLang`
+
   - `alexis.pocquet@universite-paris-saclay.fr`
   - `alexis.pocquet@etu-upsaclay.fr`
 
