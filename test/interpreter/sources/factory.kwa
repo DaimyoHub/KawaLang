@@ -1,0 +1,29 @@
+var int id_ref;
+
+class character {
+  attr int id;
+
+  static method character make_char() {
+    id_ref = id_ref + 1;
+
+    var character res = new character();
+    res.id = id_ref;
+
+    return res;
+  }
+
+  method void character() {}
+}
+
+main {
+  id_ref = 0;
+
+  var character c1 = character::make_char();
+  var character c2 = character::make_char();
+  var character c3 = character::make_char();
+
+  print(c1.id);
+  print(c2.id);
+  print(c3.id);
+}
+

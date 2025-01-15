@@ -275,9 +275,12 @@ and eval_call ctx env caller callee args =
       let this_loc = Option.get @@ Env.get calling_env (Sym "this") in
       Env.add env caller this_loc;
 
+      let _ = Env.rem calling_env (Sym "this") in
+
       Env.iter
         (fun k v ->
-          if Env.get ctx.globals k <> None then Env.add ctx.globals k v)
+          if Env.get ctx.globals k <> None then
+            Env.add ctx.globals k v)
         calling_env;
 
       res
@@ -450,29 +453,18 @@ and exec_instr ctx env instr =
           else VNull
       | _ -> raise (Exec_error "exec_instr.2"))
   | SetConst (loc, expr) -> exec_instr ctx env (Set (loc, expr))
-  | Set (Var symbol, expr) -> (
-      let new_data = value_to_data (eval_expr ctx env expr) in
-      match Env.get ctx.globals symbol with
-      | None -> (
-          match Env.get env symbol with
-          | None -> raise (Exec_error "exec_instr.3")
-          | Some v ->
-              Env.add env symbol
-                {
-                  typ = v.typ;
-                  sym = v.sym;
-                  data = new_data;
-                  is_const = v.is_const
-                };
-              VNull)
-      | Some v ->
-          Env.add ctx.globals symbol
+  | Set (Var symbol, expr) -> 
+      let new_data = value_to_data (eval_expr ctx env expr) in (
+      match Env.get env symbol with
+      | None -> raise (Exec_error "exec_instr.3")
+      | Some v -> (
+          Env.add env symbol
             {
-              typ = v.typ; 
-              sym = v.sym; 
-              data = new_data; 
-              is_const = v.is_const 
-            };
+              typ = v.typ;
+              sym = v.sym;
+              data = new_data;
+              is_const = v.is_const
+            });
           VNull)
   | Set (Attr (obj_sym, attr_sym), expr) -> (
       let update_attribute env obj new_data =
@@ -483,17 +475,12 @@ and exec_instr ctx env instr =
             | _ -> raise (Exec_error "exec_instr.4"))
         | _ -> raise (Exec_error "exec_instr.5")
       in
-      let new_data = value_to_data (eval_expr ctx env expr) in
-      match Env.get ctx.globals obj_sym with
-      | None -> (
-          match Env.get env obj_sym with
-          | None -> raise (Exec_error "exec_instr.6")
-          | Some obj ->
-              update_attribute env obj new_data;
-              VNull)
+      let new_data = value_to_data (eval_expr ctx env expr) in (
+      match Env.get env obj_sym with
+      | None -> raise (Exec_error "exec_instr.6")
       | Some obj ->
-          update_attribute ctx.globals obj new_data;
-          VNull)
+          update_attribute env obj new_data);
+      VNull)
   | Ret e -> eval_expr ctx env e
   | Ignore e ->
       let _ = eval_expr ctx env e in

@@ -1,0 +1,51 @@
+class character {
+  attr bool is_dead;
+  attr int life;
+
+  method bool is_dead() {
+    return this.is_dead;
+  }
+
+  method void character() {}
+}
+
+class pprint {
+  static method void print_is_dead(character c) {
+    print(c.is_dead());
+  }
+
+  method void pprint() {}
+}
+
+class monster extends character {
+  method void monster() {
+    this.life = 100;
+    this.is_dead = false;
+  }
+
+  method void attack(monster other) {
+    if (!this.is_dead) {
+      other.life = other.life - 20;
+    } else {}
+
+    if (other.life <= 0) {
+      other.is_dead = true;
+    } else {}
+  }
+}
+
+main {
+  var monster a = new monster();
+  var monster b = new monster();
+
+  print(b.is_dead());
+
+  while (!b.is_dead()) {
+    print(0);
+    a.attack(b);
+  }
+
+  var character b_copy = cast (character) b;
+  pprint::print_is_dead(b_copy);
+}
+

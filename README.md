@@ -330,13 +330,28 @@ project design. Below is a list of the ones I dealt with :
 This interpreter of Kawa includes the following extensions :
 
   - See features of the type checker that are not mandatory.
-  - [x] Cast expressions : `cast (class) expr`
-  - [x] The instanceof operation : `expr instanceof class`
-  - [x] Static methods (but not attributes because I did not have time to implement them)
+  - [x] Cast expressions :
+        ```
+        cast (class) expr
+        ```
+  - [x] The instanceof operation :
+        ```
+        expr instanceof class
+        ```
+  - [x] Static methods (but not attributes because I did not have time to implement them) :
+        ```
+        static method type meth(...) { ... } /* à déclarer avant les méthodes classiques */
+        ```
   - [x] Declaration of variables with an initial value.
+        ```
+        var type nom = value;
+        ```
   - [x] Declaration of variables everywhere in a block of instructions. (in the case of a while
         block, it does not work properly. Local variables of the block will persist out of scope)
   - [x] Structural equality of locations.
+        ```
+        expr === expr
+        ```
   - [x] Telling when a semicolon is missing.
   - [x] When the user is trying to access a location that does not exist, it gives an error
     message specifying a location's name that is almost like the written symbol. The algorithm
@@ -344,4 +359,7 @@ This interpreter of Kawa includes the following extensions :
   - [x] Immutable locations (var const type name = ...). The only tool that really does the job
     for constant locations is the type checker, in the interpreter, I assume that, if we are
     trying to mutate a location, then it is not constant.
+        ```
+        var const type c = value;
+        ```
 
