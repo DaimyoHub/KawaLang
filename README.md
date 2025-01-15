@@ -7,6 +7,13 @@ The project is available of github : `githob.com/DaimyoHub/KawaLang`
   - `alexis.pocquet@universite-paris-saclay.fr`
   - `alexis.pocquet@etu-upsaclay.fr`
 
+Usage :
+```
+$ dune build
+$ dune install
+$ kawai program.kwa
+```
+
 ## Description of the language
 
 Kawa is an object oriented toy programming language developed for a school
