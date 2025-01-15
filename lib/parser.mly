@@ -1,6 +1,5 @@
 %{
 
-  (*open Lexing*)
   open Abstract_syntax
   open Context
   open Environment
@@ -256,7 +255,7 @@ instr:
 | IDENT SET expr error { raise Missing_semi }
 | name=IDENT SET e=expr semi 
     {
-      Set (Loc (Sym name), e)
+      Set (Var (Sym name), e)
     }
 | THIS DOT IDENT SET expr error { raise Missing_semi}
 | THIS DOT attr=IDENT SET e=expr semi
@@ -301,11 +300,11 @@ args:
 object_expr:
 | name=IDENT
     {
-      Loc (Sym name)
+      Var (Sym name)
     }
 | THIS
     {
-      Loc (Sym "this")
+      Var (Sym "this")
     }
 | NEW name=IDENT LPAR al=separated_list(COMMA, expr) RPAR
     {

@@ -2,11 +2,12 @@ open Symbol
 open Type
 
 type expr =
-  (* Constants & symbols *)
+  (* Constants *)
   | Cst of int
   | True
   | False
-  | Loc of symbol
+  (* Locations *)
+  | Var of symbol
   | Attr of symbol * symbol
   | StaticAttr of typ * symbol
   | This

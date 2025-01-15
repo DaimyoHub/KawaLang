@@ -1,6 +1,11 @@
 open Symbol
 open Environment
 
+(*
+ * get_minimal_name distance_table first_name
+ *
+ * It gets the name associated to the minimum value of the distance table.
+ *)
 let get_minimal_name distance_table first_name =
   let _, n =
     Hashtbl.fold
@@ -15,8 +20,10 @@ let get_minimal_name distance_table first_name =
   n
 
 (*
- * On calcule la distance de Levenshtein de dst par rapport à src.
- * Paradigme : programmation dynamique (bottom-up)
+ * compute_distance src dst
+ *
+ * Computes the Levenshtein distance of word dst from word src. This algorithm
+ * uses a bottom-up strategy of the dynamic programming paradigm.
  *)
 let compute_distance src dst =
   let lsrc = String.length src in
@@ -41,6 +48,12 @@ let compute_distance src dst =
 
   mat.(lsrc).(ldst)
 
+(*
+ * make_distance_table names name
+ *
+ * Computes every distances of every words in names from the word name, and
+ * stores it in a associative table.
+ *)
 let make_distance_table names name =
   List.fold_left
     (fun acc x ->
@@ -49,6 +62,12 @@ let make_distance_table names name =
       acc)
     (Hashtbl.create 5) names
 
+(*
+ * find_nearest_coherent_symbol env symbol
+ *
+ * Gives the symbol from the whole program environment which name is the nearest
+ * from the given symbol.
+ *)
 let find_nearest_coherent_symbol env symbol =
   let name_table_ref = ref [] in
   (* Yes, it's definitely ugly, but I must finish the project soon *)

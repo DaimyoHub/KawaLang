@@ -8,10 +8,22 @@ open Context
 
 exception Exec_error of string
 
+(*
+ * let* x = func_returning_result ... in ...
+ *
+ * To avoid nested matches as much as possible, and to make the code more
+ * fluent, I defined this bind operator which just propagates a given type error
+ * report if res is an error.
+ *)
 let ( let* ) res f = match res with Ok x -> f x | Error rep -> propagate rep
 
 type value = VInt of int | VBool of bool | VObj of Env.t | VNull
 
+(*
+ * make_this_symbol ()
+ *
+ * Makes a symbol that is not used yet to allow method calls in methods.
+ *)
 let make_this_symbol =
   let counter = ref 0 in
   fun _ ->
@@ -19,6 +31,11 @@ let make_this_symbol =
     let cs = string_of_int !counter in
     Sym (Printf.sprintf "@this%s" cs)
 
+(*
+ * value_to_data value
+ *
+ * Converts a raw value to a data that can be warried by a location.
+ *)
 let value_to_data = function
   | VInt n -> Expr (Cst n)
   | VBool b -> Expr (if b then True else False)
@@ -30,6 +47,11 @@ let value_to_data = function
       Obj mapped_table
   | VNull -> No_data
 
+(*
+ * copy_args args
+ *
+ * Copy the given list of arguments.
+ *)
 let copy_args args =
   let rec loop args acc =
     match args with
@@ -37,11 +59,21 @@ let copy_args args =
     | x :: s -> loop s (x :: acc)
   in loop args []
 
+(*
+ * Every evaluation/execution function perform their work, assuming that the
+ * given expressions/instructions have been checked/typed by the type checker.
+ *)
+
+(*
+ * update_args calling_env initial_env params initial_args
+ *
+ * Updates the arguments passed to a method after it has been called.
+ *)
 let rec update_args calling_env env (params : (symbol * loc) list) initial_args
     =
   match (initial_args, params) with
   | [], [] -> ()
-  | Loc arg_sym :: ars, (psym, _) :: prs ->
+  | Var arg_sym :: ars, (psym, _) :: prs ->
       let param_loc = Option.get @@ Env.get calling_env psym in
       Env.add env arg_sym
         {
@@ -70,8 +102,18 @@ let rec update_args calling_env env (params : (symbol * loc) list) initial_args
   | _ :: ars, _ :: prs -> update_args calling_env env prs ars
   | _, _ -> raise (Exec_error "update_args.2")
 
+(*
+ * exec_prog context
+ * 
+ * Executes a whole program.
+ *)
 let rec exec_prog ctx = exec_seq ctx ctx.globals ctx.main
 
+(*
+ * eval_data context env data
+ *
+ * Converts a data to a raw value.
+ *)
 and eval_data ctx env data =
   match data with
   | Obj attrs ->
@@ -84,6 +126,11 @@ and eval_data ctx env data =
   | Expr expr -> eval_expr ctx env expr
   | No_data -> VNull
 
+(*
+ * value_to_string context env
+ * 
+ * Converts a raw value to a string.
+ *)
 and value_to_string ctx env = function
   | VNull -> "null"
   | VInt n -> Printf.sprintf "%d" n
@@ -98,6 +145,11 @@ and value_to_string ctx env = function
         obj;
       res ^ "}"
 
+(*
+ * eval_expr context env expr
+ *
+ * Evaluates the given expression.
+ *)
 and eval_expr ctx env expr =
   let eao = eval_arithmetic_op ctx env
   and eco = eval_comparison_op ctx env
@@ -107,7 +159,7 @@ and eval_expr ctx env expr =
   | Cst n -> VInt n
   | True -> VBool true
   | False -> VBool false
-  | Loc sym -> eval_variable ctx env sym
+  | Var sym -> eval_variable ctx env sym
   | Attr (o, s) -> eval_attribute ctx env o s
   | This -> eval_variable ctx env (Sym "this")
   | Add (e1, e2) -> eao e1 e2 ( + )
@@ -156,6 +208,13 @@ and eval_expr ctx env expr =
   | Cast (expr, _) -> eval_expr ctx env expr
   | StaticAttr (_, _) -> VNull
 
+(*
+ * eval_args context env params args
+ *
+ * Evaluates the given list of arguments. This function generates an
+ * environment in which every location is the value evaluated from the
+ * associated argument.
+ *)
 and eval_args ctx env params args =
   let rec eval_args_loop params args acc =
     match (params, args) with
@@ -175,6 +234,12 @@ and eval_args ctx env params args =
   in
   eval_args_loop params (List.rev args) (Env.create ())
 
+(*
+ * eval_call context env caller callee args
+ * 
+ * Evaluates a method call by the given caller object. The evaluated method
+ * is the callee and the given arguments are passed to the method.
+ *)
 and eval_call ctx env caller callee args =
   let copy_without_caller env =
     let res = Env.create () in
@@ -218,6 +283,11 @@ and eval_call ctx env caller callee args =
       res
   | _ -> raise (Exec_error "eval_call")
 
+(*
+ * eval_static_method context env class callee args
+ *
+ * Same as eval_call, but for static methods.
+ *)
 and eval_static_call ctx env typ callee args =
   match typ with
   | Cls class_symbol ->
@@ -268,7 +338,7 @@ and eval_equality ctx env e1 e2 op =
   | VNull, VNull -> VBool op
   | VObj _, VObj _ -> (
       match (e1, e2) with
-      | Loc (Sym n1), Loc (Sym n2) -> VBool (n1 = n2 = op)
+      | Var (Sym n1), Var (Sym n2) -> VBool (n1 = n2 = op)
       | Attr (Sym o1, Sym a1), Attr (Sym o2, Sym a2) ->
           VBool ((o1 = o2 && a1 = a2) = op)
       | _, _ -> VBool (op = false))
@@ -335,7 +405,7 @@ and exec_instr ctx env instr =
           else VNull
       | _ -> raise (Exec_error "exec_instr.2"))
   | SetConst (loc, expr) -> exec_instr ctx env (Set (loc, expr))
-  | Set (Loc symbol, expr) -> (
+  | Set (Var symbol, expr) -> (
       let new_data = value_to_data (eval_expr ctx env expr) in
       match Env.get ctx.globals symbol with
       | None -> (
@@ -385,7 +455,7 @@ and exec_instr ctx env instr =
       VNull
   | Init (sym, is_const, typ, expr) ->
       Env.add env sym { sym; typ; data = Expr expr; is_const };
-      exec_instr ctx env (Set (Loc sym, expr))
+      exec_instr ctx env (Set (Var sym, expr))
   | _ -> raise (Exec_error "exec_instr.7")
 
 and exec_seq ctx env seq =

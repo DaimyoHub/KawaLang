@@ -54,6 +54,12 @@ let get_method ctx (class_def : class_def) symbol =
   in
   get_method_in_super class_def
 
+(*
+ * get_static_method class_def method_symbol
+ *
+ * If the given symbol corresponds to a static method of the given class, it
+ * returns its definition. Else, it reports a symbol resolving error.
+ *)
 let get_static_method class_def symbol =
   match MethodTable.get class_def.static_meths symbol with
   | None -> report_symbol_resolv (Method_not_in_class (class_def.sym, symbol))
@@ -102,6 +108,12 @@ let get_variable ctx env symbol =
       | Some var -> allocate_then_get ctx.globals var)
   | Some var -> allocate_then_get env var
 
+(*
+ * silent_get_variable ctx env symbol
+ *
+ * Same as get_variable, but if it reports a type error, it will not be printed on
+ * the output.
+ *)
 let silent_get_variable ctx env symbol =
   let allocate_then_get env var =
     if is_object_allocated var = false then (
@@ -163,6 +175,12 @@ let get_attribute ctx env loc_sym attr_sym =
       | _, _ -> report None (Some var.typ) (Expected_object var.sym))
   | Error rep -> propagate rep
 
+(*
+ * get_static_attribute ctx typ attr_sym
+ *
+ * Same as get_attribute but instead of getting an attribute associated with an
+ * object, it gets an attribute associated with a class.
+ *)
 let get_static_attribute ctx typ attr_sym =
   let allocate_then_get env var =
     if is_object_allocated var = false then (
@@ -195,7 +213,7 @@ let get_static_attribute ctx typ attr_sym =
  *)
 let get_location ctx env loc_kind =
   match loc_kind with
-  | Loc symbol -> get_variable ctx env symbol
+  | Var symbol -> get_variable ctx env symbol
   | Attr (obj, attr) -> get_attribute ctx env obj attr
   | _ -> report_symbol_resolv Not_loc
 
@@ -207,12 +225,18 @@ let get_location ctx env loc_kind =
  *)
 let get_location_symbol loc_kind =
   match loc_kind with
-  | Loc symbol -> Ok symbol
+  | Var symbol -> Ok symbol
   | Attr (obj, attr) ->
       let (Sym obj_name) = obj and (Sym attr_name) = attr in
       Ok (Sym (obj_name ^ "." ^ attr_name))
   | _ -> report_symbol_resolv Not_loc
 
+(*
+ * is_location_const context env loc_kind
+ *
+ * If the given location correspond to a location of the program, it returns
+ * its is_const property. If if does not, it reports a symbol resolving error.
+ *)
 let is_location_const ctx env loc_kind =
   let* loc = get_location ctx env loc_kind in
   Ok loc.is_const
@@ -253,6 +277,13 @@ let get_attribute_type ctx env obj_sym attr_sym =
       | _ -> Ok attr.typ)
   | Error rep -> propagate rep
 
+(*
+ * get_static_attribute_type ctx type attribute_sym
+ *
+ * If the given object symbol corresponds to an attribute of the given class type,
+ * it returns the type of the static attribute. If there is an issue during symbol
+ * resolving, a symbol resolving error is reported.
+ *)
 let get_static_attribute_type ctx typ attr_sym =
   let* attr = get_static_attribute ctx typ attr_sym in
   match attr.typ with
@@ -271,7 +302,7 @@ let get_static_attribute_type ctx typ attr_sym =
  *)
 let get_location_type ctx env loc_kind =
   match loc_kind with
-  | Loc symbol -> get_variable_type ctx env symbol
+  | Var symbol -> get_variable_type ctx env symbol
   | Attr (obj, attr) -> get_attribute_type ctx env obj attr
   | _ -> report_symbol_resolv Not_loc
 
@@ -309,7 +340,7 @@ let get_attribute_data ctx env obj_sym attr_sym =
  *)
 let get_location_data ctx env loc_kind =
   match loc_kind with
-  | Loc symbol -> get_variable_data ctx env symbol
+  | Var symbol -> get_variable_data ctx env symbol
   | Attr (obj, attr) -> get_attribute_data ctx env obj attr
   | _ -> report_symbol_resolv Not_loc
 

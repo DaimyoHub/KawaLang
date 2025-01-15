@@ -49,10 +49,13 @@ type typ_err_kind =
 
 type typ_err_report = {
   expected : typ option;
-  obtained : typ option;
+  obtained : typ option; 
   kind : typ_err_kind;
 }
 
+(*
+ * Converts a type option to a string.
+ *)
 let ttos ot =
   match ot with
   | None -> "unknown"
@@ -63,6 +66,11 @@ let ttos ot =
       | Void -> "void"
       | Cls (Sym s) -> s)
 
+(*
+ * pprint_symbol_resolv error_report
+ * 
+ * Prints a pretty version of the symbol resolving error report on the output.
+ *)
 let pprint_symbol_resolv err =
   let fmt = Printf.sprintf in
   match err with
@@ -83,6 +91,11 @@ let pprint_symbol_resolv err =
   | Attribute_not_found (Sym o, Sym s) ->
       fmt "Attribute '%s' of object '%s' was not found.\n" s o
 
+(*
+ * pprint error_report
+ * 
+ * Prints a pretty version of the error report on the output.
+ *)
 let pprint rep =
   let fmt = Printf.sprintf in
   match rep.kind with
@@ -149,19 +162,51 @@ let pprint rep =
   | Const_set (Sym s) ->
       fmt "Trying to mutate constant location '%s'.\n" s
 
+(*
+ * report expected_type_opt obtained_type_opt error_kind
+ *
+ * Reports the given error with the given expected and obtained type. Every kind
+ * of error do not necessarily implies expected/obtained types, thats why we
+ * provide them wrapped in the option monad.
+ *)
 let report exp obt kind =
   let rep = { expected = exp; obtained = obt; kind } in
   print_string (pprint rep);
   Error rep
 
+(*
+ * silent_report expected_type_opt obtained_type_opt error_kind
+ *
+ * Same ass report, but it is not printed on the output.
+ *)
 let silent_report exp obt kind =
   let rep = { expected = exp; obtained = obt; kind } in
   Error rep
 
+(*
+ * propagate error_report
+ *
+ * It just returns the given error report.
+ *)
 let propagate rep = Error rep
+
+(*
+ * report_symbol_resolv error
+ *
+ * Same as report, but of symbol resolving errors.
+ *)
 let report_symbol_resolv err = report None None (Sym_res_err err)
+
+(*
+ * silent_report_symbol_resolv error
+ *
+ * Same as silent_report but of symbol resolving errors.
+ *)
 let silent_report_symbol_resolv err = silent_report None None (Sym_res_err err)
 
+(*
+ * Checks if the error is a method call related error.
+ *)
 let is_call_related_report rep =
   match rep.kind with
   | Expected_args _ | Unexpected_args _ | Arg_ill_typed (_, _) -> true

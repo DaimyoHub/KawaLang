@@ -69,7 +69,7 @@ and type_expr ctx env expr =
   match expr with
   | Cst _ -> Ok Int
   | True | False -> Ok Bool
-  | Loc s -> get_variable_type ctx env s
+  | Var s -> get_variable_type ctx env s
   | Attr (o, s) -> get_attribute_type ctx env o s
   | StaticAttr (t, s) -> get_static_attribute_type ctx t s
   | This -> get_variable_type ctx env (Sym "this")
@@ -285,7 +285,7 @@ and check_instr ctx env exp instr =
         report_symbol_resolv (Diff_locs_same_sym sym)
       else (
         Env.add env sym { sym; typ; data = No_data; is_const };
-        check_instr ctx env exp (Set (Loc sym, expr)))
+        check_instr ctx env exp (Set (Var sym, expr)))
 
 (*
  * check_if_statement context env expected_type if_stmt
@@ -319,7 +319,7 @@ and check_if_statement ctx env exp instr =
         else (
           Env.add env sym { sym; is_const; typ; data = No_data };
           Env.add branch_env sym { sym; is_const; typ; data = No_data };
-          match check_instr ctx env exp (SetConst (Loc sym, expr)) with
+          match check_instr ctx env exp (SetConst (Var sym, expr)) with
           | Ok Void -> check_branch flag s exp
           | Ok _ -> failwith "Unreachable : check_if_statement.check_branch"
           | Error rep ->

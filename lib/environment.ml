@@ -2,6 +2,10 @@ open Symbol
 open Abstract_syntax
 open Type
 
+(*
+ * A generic table interface. I use it to defines environment,
+ * the class table of the program and the method table of each class.
+ *)
 module type Table = sig
   type t
   type k
@@ -43,6 +47,10 @@ module Make (V : Value) :
   let raw env = env
   let iter f env = Hashtbl.iter f (raw env)
 
+  (*
+   * If multiple symbols of the given envs share the same symbol, the result
+   * is None.
+   *)
   let rec merge envs =
     match envs with
     | [] -> Some (create ())
@@ -64,23 +72,35 @@ end
 type data = No_data | Expr of expr | Obj of (symbol, typ * data * bool) Hashtbl.t
 type loc = { sym : symbol; typ : Type.typ; data : data; is_const : bool }
 
+(*
+ * An environment is just a table that associates a location to a symbol.
+ *)
+module Env : Table with type v = loc and type k = symbol = Make (struct
+  type t = loc
+end)
+
+(*
+ * Returns a location with the given data.
+ *)
 let make_loc_with_data name typ data c = 
   let const = match c with
     | None -> false
     | Some _ -> true
   in { sym = Sym name; typ; data = data; is_const = const }
 
+(*
+ * Returns a location with No_data as data.
+ *)
 let make_loc name typ c =
   let const = match c with
     | None -> false
     | Some _ -> true
   in { sym = Sym name; typ; data = No_data; is_const = const }
 
+(*
+ * Get the attributes of an object.
+ *)
 let get_object_attributes loc =
   match loc.data with
   | Obj attrs -> attrs
   | _ -> raise (Invalid_argument "arg is not an object")
-
-module Env : Table with type v = loc and type k = symbol = Make (struct
-  type t = loc
-end)

@@ -3,11 +3,25 @@ open Type
 open Type_error
 open Context
 
+(*
+ * is_object_allocated object
+ * 
+ * Checks if the given object is allocated. An object that is not
+ * allocated has No_data as data.
+ *)
 let is_object_allocated obj =
   match obj.typ with
   | Cls _ -> if obj.data = No_data then false else true
   | _ -> true
 
+(*
+ * allocate_object_data context object
+ *
+ * Allocates the given object, constructing its attributes. This function is
+ * not recursive to allow the definition of recursive classes. If it was recursive,
+ * in the presence of recursive classes it would run permanently when it would
+ * be called.
+ *)
 let allocate_object_data ctx obj =
   let rec add_class_attributes attrs class_symbol =
     match ClassTable.get ctx.classes class_symbol with
