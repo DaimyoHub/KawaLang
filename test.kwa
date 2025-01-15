@@ -34,7 +34,7 @@ class list extends foo {
 
 main {
   var const list test = new list(1, new list(2, nil));
-  test = nil;
   print(test.hola);
+  print(test.sum());
 }
 

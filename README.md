@@ -1,5 +1,10 @@
 # Kawa Language Interpreter : development report
 
+## Contact
+
+  - `alexis.pocquet@universite-paris-saclay.fr`
+  - `alexis.pocquet@etu-upsaclay.fr`
+
 ## Description of the language
 
 Kawa is an object oriented toy programming language developed for a school

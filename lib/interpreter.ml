@@ -306,31 +306,61 @@ and eval_static_call ctx env typ callee args =
       res
   | _ -> raise (Exec_error "eval_static_call")
 
+(*
+ * eval_arithmetic_op context env e1 e2 op
+ *
+ * Evaluates the given arithmetic operation.
+ *)
 and eval_arithmetic_op ctx env e1 e2 (op : int -> int -> int) =
   let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
   match (v1, v2) with
   | VInt a, VInt b -> VInt (op a b)
   | _ -> raise (Exec_error "eval_arithmetic_op")
 
+(*
+ * eval_comparison_op context env e1 e2 op
+ *
+ * Evaluates the given comparison operation.
+ *)
 and eval_comparison_op ctx env e1 e2 op =
   let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
   match (v1, v2) with
   | VInt a, VInt b -> VBool (op a b)
   | _ -> raise (Exec_error "eval_comparison_op")
 
+(*
+ * eval_logic_op context env e1 e2 op
+ *
+ * Evaluates the given logic operation.
+ *)
 and eval_logic_op ctx env e1 e2 op =
   let v1 = eval_expr ctx env e1 and v2 = eval_expr ctx env e2 in
   match (v1, v2) with
   | VBool a, VBool b -> VBool (op a b)
   | _ -> raise (Exec_error "eval_logic_op")
 
+(*
+ * eval_variable context env symbol
+ *
+ * evaluates the given variable.
+ *)
 and eval_variable ctx env sym =
   eval_data ctx env (Result.get_ok @@ get_variable_data ctx env sym)
 
+(*
+ * eval_attribute context env object_symbol attr_symbol
+ *
+ * Evaluates the given attribute.
+ *)
 and eval_attribute ctx env obj_sym attr_sym =
   eval_data ctx env
     (Result.get_ok @@ get_attribute_data ctx env obj_sym attr_sym)
 
+(*
+ * eval_equality context env e1 e2 op
+ * 
+ * Evaluates the given equality operation.
+ *)
 and eval_equality ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
   | VInt a, VInt b -> VBool (a = b = op)
@@ -344,6 +374,11 @@ and eval_equality ctx env e1 e2 op =
       | _, _ -> VBool (op = false))
   | _, _ -> raise (Exec_error "eval_equality")
 
+(*
+ * eval_structural_equality context env e1 e2 op
+ * 
+ * Evaluates the given structural equality operation.
+ *)
 and eval_structural_equality_op ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
   | VInt a, VInt b -> VBool (a = b = op)
@@ -366,6 +401,11 @@ and eval_structural_equality_op ctx env e1 e2 op =
       VBool !res
   | _, _ -> raise (Exec_error "eval_structural_equality")
 
+(*
+ * is_same_value context env v1 v2
+ *
+ * Checks if the given values are the same.
+ *)
 and is_same_value ctx env v1 v2 =
   match (v1, v2) with
   | VNull, VNull -> true
@@ -387,6 +427,11 @@ and is_same_value ctx env v1 v2 =
       !res
   | _ -> false
 
+(*
+ * exec_instr context env instr
+ *
+ * Executes the given instruction.
+ *)
 and exec_instr ctx env instr =
   match instr with
   | Print e ->
@@ -458,6 +503,11 @@ and exec_instr ctx env instr =
       exec_instr ctx env (Set (Var sym, expr))
   | _ -> raise (Exec_error "exec_instr.7")
 
+(*
+ * exec_seq context env sequence
+ *
+ * Executes the given sequence of instructions.
+ *)
 and exec_seq ctx env seq =
   match seq with
   | [] -> VNull
