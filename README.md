@@ -371,4 +371,6 @@ This interpreter of Kawa includes the following extensions :
         ```
         var const type c = value;
         ```
+  - [x] If instruction without forcing the else branch.
+  - [x] Panic instruction to abort the program execution.
 

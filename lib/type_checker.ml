@@ -8,6 +8,7 @@ open Type_error
 
 exception Class_type_error of class_def
 exception Main_type_error
+exception Unhandled_type_error of string
 
 (*
  * let* x = func_returning_result ... in ...
@@ -107,7 +108,7 @@ and type_expr ctx env expr =
       match type_call ctx env class_symbol Void args ctor.params with
       | Ok Void -> Ok (Cls class_symbol)
       | Error rep -> propagate rep
-      | Ok _ -> failwith "Unreachable : ctor does not return type void")
+      | Ok _ -> raise (Unhandled_type_error "Unreachable : ctor does not return type void"))
   | Call (caller, callee, args) -> (
       let* var_t = get_variable_type ctx env caller in
       match var_t with
@@ -286,6 +287,7 @@ and check_instr ctx env exp instr =
       else (
         Env.add env sym { sym; typ; data = No_data; is_const };
         check_instr ctx env exp (Set (Var sym, expr)))
+  | Panic _ -> Ok Void
 
 (*
  * check_if_statement context env expected_type if_stmt
@@ -321,7 +323,7 @@ and check_if_statement ctx env exp instr =
           Env.add branch_env sym { sym; is_const; typ; data = No_data };
           match check_instr ctx env exp (SetConst (Var sym, expr)) with
           | Ok Void -> check_branch flag s exp
-          | Ok _ -> failwith "Unreachable : check_if_statement.check_branch"
+          | Ok _ -> raise (Unhandled_type_error "Unreachable : check_if_statement.check_branch")
           | Error rep ->
               let _ =
                 report (Some Void) rep.obtained (If_branch_ill_typed flag)
@@ -330,7 +332,8 @@ and check_if_statement ctx env exp instr =
     | instr :: s -> (
         match check_instr ctx env exp instr with
         | Ok Void -> check_branch flag s exp
-        | Ok _ -> failwith "Unreachable : check_if_statement.check_branch"
+        | Ok t ->
+            let _ = check_branch flag s exp in Ok t
         | Error rep ->
             let _ =
               report (Some Void) rep.obtained (If_branch_ill_typed flag)
@@ -352,9 +355,9 @@ and check_if_statement ctx env exp instr =
           | Error rep -> report (Some t) rep.obtained Branches_not_return_same)
       | Error rep -> report (Some Bool) rep.obtained (Cond_not_bool cond))
   | _ ->
-      failwith
+      raise (Unhandled_type_error 
         "Unreachable : check_if_statement of an instruction which is not an if \
-         statement"
+         statement")
 
 (*
  * check_seq context env expected_type instr_list

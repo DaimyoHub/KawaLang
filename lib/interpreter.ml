@@ -7,6 +7,7 @@ open Type_checker
 open Context
 
 exception Exec_error of string
+exception Exec_panic of int
 
 (*
  * let* x = func_returning_result ... in ...
@@ -24,10 +25,9 @@ type value = VInt of int | VBool of bool | VObj of Env.t | VNull
  *
  * Makes a symbol that is not used yet to allow method calls in methods.
  *)
-let make_this_symbol =
+let this_symbol =
   let counter = ref 0 in
-  fun _ ->
-    incr counter;
+  fun () ->
     let cs = string_of_int !counter in
     Sym (Printf.sprintf "@this%s" cs)
 
@@ -69,7 +69,7 @@ let copy_args args =
  *
  * Updates the arguments passed to a method after it has been called.
  *)
-let rec update_args calling_env env (params : (symbol * loc) list) initial_args
+let rec update_args ctx calling_env env (params : (symbol * loc) list) initial_args
     =
   match (initial_args, params) with
   | [], [] -> ()
@@ -83,23 +83,19 @@ let rec update_args calling_env env (params : (symbol * loc) list) initial_args
           is_const = param_loc.is_const
         };
       let _ = Env.rem calling_env psym and _ = Env.rem calling_env arg_sym in
-      update_args calling_env env prs ars
-  | Attr (Sym obj_name, _) :: ars, (psym, _) :: prs ->
+      update_args ctx calling_env env prs ars
+  | Attr (obj_sym, attr_sym) :: ars, (psym, _) :: prs ->
       let param_loc = Option.get @@ Env.get calling_env psym in
-      (match param_loc.data with
-      | Obj attrs ->
-          Env.add env (Sym obj_name)
-            {
-              sym = Sym obj_name;
-              typ = param_loc.typ;
-              data = Obj attrs;
-              is_const = param_loc.is_const
-            }
+      let obj_data = Result.get_ok @@ get_variable_data ctx env obj_sym in
+      let attr = Result.get_ok @@ get_attribute ctx env obj_sym attr_sym in
+      (match obj_data with
+      | Obj attrs -> 
+          Hashtbl.add attrs attr_sym (attr.typ, param_loc.data, attr.is_const)
       | _ -> raise (Exec_error "update_args.1"));
       let _ = Env.rem calling_env psym
-      and _ = Env.rem calling_env (Sym obj_name) in
-      update_args calling_env env prs ars
-  | _ :: ars, _ :: prs -> update_args calling_env env prs ars
+      and _ = Env.rem calling_env obj_sym in
+      update_args ctx calling_env env prs ars
+  | _ :: ars, _ :: prs -> update_args ctx calling_env env prs ars
   | _, _ -> raise (Exec_error "update_args.2")
 
 (*
@@ -107,7 +103,7 @@ let rec update_args calling_env env (params : (symbol * loc) list) initial_args
  * 
  * Executes a whole program.
  *)
-let rec exec_prog ctx = exec_seq ctx ctx.globals ctx.main
+and exec_prog ctx = exec_seq ctx ctx.globals ctx.main
 
 (*
  * eval_data context env data
@@ -195,7 +191,7 @@ and eval_expr ctx env expr =
       | _ -> raise (Exec_error "eval_expr.3"))
   | Call (caller, callee, args) -> eval_call ctx env caller callee args
   | Inst (callee, args) ->
-      let this_symbol = make_this_symbol () in
+      let this_symbol = this_symbol () in
       Env.add env this_symbol
         { sym = this_symbol; data = No_data; typ = Cls callee; is_const = false };
       let _ = eval_call ctx env this_symbol callee args in
@@ -270,7 +266,7 @@ and eval_call ctx env caller callee args =
         };
       let res = exec_seq ctx calling_env meth.code in
 
-      update_args calling_env env meth.params initial_args;
+      update_args ctx calling_env env meth.params initial_args;
 
       let this_loc = Option.get @@ Env.get calling_env (Sym "this") in
       Env.add env caller this_loc;
@@ -302,9 +298,11 @@ and eval_static_call ctx env typ callee args =
       let calling_env = Option.get @@ Env.merge [ args_env; ctx.globals ] in
       let res = exec_seq ctx calling_env meth.code in
 
-      update_args calling_env env meth.params args;
+      update_args ctx calling_env env meth.params args;
 
-      Env.iter (fun k v -> Env.add ctx.globals k v) calling_env;
+      Env.iter (fun k v ->
+        if Env.get ctx.globals k <> None then
+          Env.add ctx.globals k v) calling_env;
 
       res
   | _ -> raise (Exec_error "eval_static_call")
@@ -366,7 +364,7 @@ and eval_attribute ctx env obj_sym attr_sym =
  *)
 and eval_equality ctx env e1 e2 op =
   match (eval_expr ctx env e1, eval_expr ctx env e2) with
-  | VInt a, VInt b -> VBool (a = b = op)
+  | VInt a, VInt b -> VBool ((a = b) = op)
   | VBool a, VBool b -> VBool (a = b = op)
   | VNull, VNull -> VBool op
   | VObj _, VObj _ -> (
@@ -375,7 +373,7 @@ and eval_equality ctx env e1 e2 op =
       | Attr (Sym o1, Sym a1), Attr (Sym o2, Sym a2) ->
           VBool ((o1 = o2 && a1 = a2) = op)
       | _, _ -> VBool (op = false))
-  | _, _ -> raise (Exec_error "eval_equality")
+  | _ -> raise (Exec_error "eval_equality")
 
 (*
  * eval_structural_equality context env e1 e2 op
@@ -488,6 +486,7 @@ and exec_instr ctx env instr =
   | Init (sym, is_const, typ, expr) ->
       Env.add env sym { sym; typ; data = Expr expr; is_const };
       exec_instr ctx env (Set (Var sym, expr))
+  | Panic n -> raise (Exec_panic n)
   | _ -> raise (Exec_error "exec_instr.7")
 
 (*

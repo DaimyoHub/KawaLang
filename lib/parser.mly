@@ -78,6 +78,7 @@
 %token SEMI
 %token COMMA
 %token DOT
+%token PANIC
 %token PRINT
 %token EOF
 %token IF
@@ -92,8 +93,8 @@
 %token SET
 %token <int> NUM
 
-%left NOT_EQUALS EQUALS LESS_EQUALS LESS GREATER GREATER_EQUALS STRUCT_EQ STRUCT_NEQ
 %left AND OR
+%left NOT_EQUALS EQUALS LESS_EQUALS LESS GREATER GREATER_EQUALS STRUCT_EQ STRUCT_NEQ
 %left NOT
 %nonassoc INSTANCEOF
 %left MODULO
@@ -241,6 +242,11 @@ class_def:
         )
       }
     }
+;
+
+else_branch:
+| ELSE BEGIN seq=list(instr) END { seq }
+;
 
 instr:
 | v=var_init
@@ -252,12 +258,17 @@ instr:
     {
       Print(e)
     }
+| PANIC LPAR NUM RPAR error { raise Missing_semi }
+| PANIC LPAR n=NUM RPAR semi
+    {
+      Panic(n)
+    }
 | IDENT SET expr error { raise Missing_semi }
 | name=IDENT SET e=expr semi 
     {
       Set (Var (Sym name), e)
     }
-| THIS DOT IDENT SET expr error { raise Missing_semi}
+| THIS DOT IDENT SET expr error { raise Missing_semi }
 | THIS DOT attr=IDENT SET e=expr semi
     {
       Set (Attr (Sym "this", Sym attr), e)
@@ -278,12 +289,15 @@ instr:
       Ignore e
     }
 | IF LPAR cond=expr RPAR BEGIN
-    is1=list(instr)
-  END ELSE BEGIN
-    is2=list(instr)
-  END
+    seq=list(instr)
+  END maybe_else=option(else_branch)
     {
-      If (cond, is1, is2)
+      let else_seq =
+        match maybe_else with
+        | None -> []
+        | Some s -> s
+      in
+      If (cond, seq, else_seq)
     }
 | WHILE LPAR cond=expr RPAR BEGIN
     seq=list(instr)

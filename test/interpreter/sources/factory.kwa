@@ -1,3 +1,8 @@
+/*
+ * Un exemple d'utilisation d'une factory pour garantir l'unicité
+ * d'un identifiant pour un objet du type character.
+ */
+
 var int id_ref;
 
 class character {

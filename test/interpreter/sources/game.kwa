@@ -1,3 +1,8 @@
+/*
+ * Un exemple de proto-jeu qui fait intervenir du transtypage
+ * et du polymorphisme par héritage.
+ */
+
 class character {
   attr bool is_dead;
   attr int life;

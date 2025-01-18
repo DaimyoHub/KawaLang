@@ -48,3 +48,4 @@ type instr =
   | Ret of expr
   | Ignore of expr
   | Init of symbol * bool * typ * expr
+  | Panic of int

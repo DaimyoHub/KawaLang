@@ -30,7 +30,8 @@
           "instanceof", INSTANCEOF;
           "cast",       CAST;
           "static",     STATIC;
-          "const",      CONST
+          "const",      CONST;
+          "panic",      PANIC
         ];
       fun s ->
         try  Hashtbl.find h s

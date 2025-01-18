@@ -1,0 +1,46 @@
+/*
+ * Calcul des 500 premières itérations de la conjecture de syracuse.
+ * Ce programme ne sert à rien car le langage ne dispose pas de la notion
+ * de nombre à virgule. Le but était de de calculer le temps de vol
+ * moyen sur les 500 premières itérations.
+ */
+
+class collatz_stats {
+  attr int sample_number;
+  attr int avg_flying_time;
+
+  static method int run_collatz(int n) {
+    if (n == 1) { return 0; }
+    else { 
+      if (n % 2 == 0) {
+        return 1 + collatz_stats::run_collatz(n / 2);
+      } else {
+        return 1 + collatz_stats::run_collatz(3 * n + 1);
+      }
+    }
+  }
+
+  method void collatz_stats() {
+    this.sample_number = 0;
+    this.avg_flying_time = 0;
+  }
+
+  method void one_more_time() {
+    this.sample_number = this.sample_number + 1;
+    var int ft = collatz_stats::run_collatz(this.sample_number);
+    this.avg_flying_time = (this.avg_flying_time + ft) / this.sample_number;
+  }
+}
+
+main {
+  var collatz_stats stats = new collatz_stats();
+
+  var int i = 0;
+  while (i < 500) {
+    stats.one_more_time();
+    i = i + 1;
+  }
+
+  print(stats.avg_flying_time);
+}
+

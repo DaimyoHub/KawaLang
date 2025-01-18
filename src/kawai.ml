@@ -30,6 +30,12 @@ let kawai file =
   | Missing_semi ->
       print_endline (Printf.sprintf "Missing semicolon : %s" (get_position lexbuf));
       VNull
+  | Type_checker.Unhandled_type_error err ->
+      print_endline (Printf.sprintf "Unhandled type error : %s" err);
+      VNull
+  | Interpreter.Exec_panic n ->
+      print_endline (Printf.sprintf "Execution aborted : panic with code %d" n);
+      VNull
 
 let () =
   try
