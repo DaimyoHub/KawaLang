@@ -339,38 +339,57 @@ project design. Below is a list of the ones I dealt with :
 This interpreter of Kawa includes the following extensions :
 
   - See features of the type checker that are not mandatory.
-  - [x] Cast expressions :
-        ```
-        cast (class) expr
-        ```
-  - [x] The instanceof operation :
-        ```
-        expr instanceof class
-        ```
-  - [x] Static methods (but not attributes because I did not have time to implement them) :
-        ```
-        static method type meth(...) { ... } /* à déclarer avant les méthodes classiques */
-        ```
-  - [x] Declaration of variables with an initial value.
-        ```
-        var type nom = value;
-        ```
+  - [x] Cast expressions : It was hard to deal with conflicts in a first time, as a consequence,
+        because time was running out, I decided to explicitely write cast expressions with the
+        syntax `cast (class) expr`. A cast is only relevant during the type checking process,
+        so it is the only place I handle it. The interpreter juste ignores it and evaluates the
+        given expression.
+
+  - [x] The instanceof operation : It would have been nice to evaluate this expression during
+        the type checking process but I did not forecasted to implement this extension, and
+        my type checker does not generates a typed AST. So, in this implementation, the type checker
+        just checks this existence of the given class and types the given expression, and the interpreter
+        performs the operation.
+
+  - [x] Static methods (but not attributes because I did not have time to implement them) : 
+        I reserved a method table in class definitions, to gather statit methods. Both in the type
+        checker and in the interpreter, static methods are handled just like classical methods,
+        except that the constructed calling environment does not contain any caller object.
+
+  - [x] Declaration of variables with an initial value : I implemented locations so that they could 
+        directly be constructed with a given data. I just added more syntax to the parser. Attributes
+        cannot be initialized in their declaration because this task is provided by the constructor.
+        Same for global variables, as we can initialize them in the main block.
+
   - [x] Declaration of variables everywhere in a block of instructions. (in the case of a while
         block, it does not work properly. Local variables of the block will persist out of scope)
-  - [x] Structural equality of locations.
-        ```
-        expr === expr
-        ```
-  - [x] Telling when a semicolon is missing.
+        I had to add an "init" instruction to the language. Semantically, it is the same as
+        a declaration followed by an affectation, both in the type checker and the interpreter.
+        Moreover, I had to handle constant locations being declared with an initial value. In this case,
+        I created a distinct "set" instruction (ConstSet) which should initialize a given
+        constant location only once : when it is declared. When the parser finds constant location
+        initialization, instead of returning a "Set" instruction, it returns a "ConstSet" one.
+
+  - [x] Structural equality of locations : The syntax is `expr === expr`. It is pretty much the
+        same as `==` but it checks equality of attributes when comparing objects together.
+
+  - [x] Telling when a semicolon is missing : I used the built-in rule "error" of menhir to handle it.
+        For each instruction, I duplicate it, transforming the "semi" rule to the "error" rule.
+        
   - [x] When the user is trying to access a location that does not exist, it gives an error
-    message specifying a location's name that is almost like the written symbol. The algorithm
-    computes Levenshtein distances.
-  - [x] Immutable locations (var const type name = ...). The only tool that really does the job
-    for constant locations is the type checker, in the interpreter, I assume that, if we are
-    trying to mutate a location, then it is not constant.
-        ```
-        var const type c = value;
-        ```
-  - [x] If instruction without forcing the else branch.
-  - [x] Panic instruction to abort the program execution.
+        message specifying a location's name that is almost like the written symbol. The algorithm
+        computes Levenshtein distances of each symbols in the current environment from the
+        symbol that was not recognized.
+
+  - [x] Immutable locations `var const type name = ...`. The only tool that really does the job
+        for constant locations is the type checker, in the interpreter, I assume that, if we are
+        trying to mutate a location, then it is not constant.
+
+  - [x] If instruction without forcing the else branch : I just made the else branch optional in the
+        parser.
+
+  - [x] Panic instruction to abort the program execution. I wanted a feature that could stop the execution
+        of a well typed program in the presence of runtime errors. It is just one more instruction in
+        the language. The type checker does nothing and the interpreter raises an Exec_panic exception,
+        with an error code.
 
