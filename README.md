@@ -14,6 +14,12 @@ $ dune install
 $ kawai program.kwa
 ```
 
+Testing interpreter/type checker :
+```
+$ kawai test/interpreter/test_file1.kwa
+$ kawai test/typechecker/test_file2.kwa
+```
+
 ## Description of the language
 
 Kawa is an object oriented toy programming language developed for a school
