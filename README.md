@@ -83,41 +83,22 @@ functions.
 
 ### Files and modules
 
-+------------------------+------------------------------------------------------------------------+
+| file                   | contents                                                               |
+|------------------------|------------------------------------------------------------------------|
 | lib/abstract_syntax.ml | Contains the type representing the abstract syntax of a program.       |
-+------------------------+------------------------------------------------------------------------+
-| lib/context.ml         | Contains program structures such as class definition, method           |
-|                        | definition, program context, etc.                                      |
-+------------------------+------------------------------------------------------------------------+
-| lib/environment.ml     | Contains the generic module Table that represents an associative table |
-|                        | and Env, an instance of Table representing an environment.             |
-+------------------------+------------------------------------------------------------------------+
+| lib/context.ml         | Contains program structures such as class definition, method definition, program context, etc. |
+| lib/environment.ml     | Contains the generic module Table that represents an associative table and Env, an instance of Table representing an environment. |
 | lib/symbol.ml          | Contains the type symbol.                                              |
-+------------------------+------------------------------------------------------------------------+
 | lib/type.ml            | Contains representations of a program types.                           |
-+------------------------+------------------------------------------------------------------------+
 | lib/lexer.mll          | The lexer.                                                             |
-+------------------------+------------------------------------------------------------------------+
 | lib/parser.mly         | The parser.                                                            |
-+------------------------+------------------------------------------------------------------------+
-| lib/type_checker.ml    | The type checker. It contains every type checking and typing           |
-|                        | functions.                                                             |
-+------------------------+------------------------------------------------------------------------+
+| lib/type_checker.ml    | The type checker. It contains every type checking and typing functions. |                                                            
 | lib/interpreter.ml     | The interpreter. It contains every executing/evaluating functions.     |
-+------------------------+------------------------------------------------------------------------+
-| lib/symbol_resolver.ml | The symbol resolver. It contains every function that checks the        |
-|                        | nature of symbols (classes, methods, locations...), and every function |
-|                        | that returns properties of program's objects.                          |
-+------------------------+------------------------------------------------------------------------+
-| lib/type_error.ml      | It contains the interface to handle (report, propagating, printing out |
-|                        | type errors.                                                           |
-+------------------------+------------------------------------------------------------------------+
+| lib/symbol_resolver.ml | It contains every function that checks the nature of symbols (classes, methods, locations...), and every function that returns properties of program's objects. |
+| lib/type_error.ml      | It contains the interface to handle (report, propagating, printing out type errors. |
 | lib/allocator.ml       | It contains functions allocating objects during the program execution. |
-+------------------------+------------------------------------------------------------------------+
 | lib/levenshtein.ml     | It contains functions for the extension "did you mean ... ?".          |
-+------------------------+------------------------------------------------------------------------+
 | lib/debug.ml           | It contains debugging functions.                                       |
-+------------------------+------------------------------------------------------------------------+
 
 Every function is commented in the project. Comments do not exhaustivelly expose the behaviour of
 functions but at least, it gives their general behaviour.
