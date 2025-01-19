@@ -98,8 +98,7 @@
 %left NOT
 %nonassoc INSTANCEOF
 %left MODULO
-%left MINUS
-%left PLUS
+%left PLUS MINUS
 %left DIVIDES
 %left TIMES
 

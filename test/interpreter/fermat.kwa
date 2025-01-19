@@ -1,0 +1,7 @@
+main {
+  var bool verif_petit_theoreme_de_fermat = 
+    -(1 - --5 + 5 - 25 * 25 * 25) % 3 == 0 && 25 % 3 != 0;
+
+  print(verif_petit_theoreme_de_fermat);
+}
+

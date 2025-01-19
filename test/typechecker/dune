@@ -1,5 +1,0 @@
-(executable
- (name test_tc)
- (public_name kawa.test.typechecker)
- (libraries kawa.lang)
- (package kawa))

@@ -117,7 +117,9 @@ let pprint rep =
   | Set_ill_typed (Sym s, _) ->
       fmt "Cannot set location '%s' typed as %s with a value of type %s.\n" s
         (ttos rep.expected) (ttos rep.obtained)
-  | Print_ill_typed _ -> "Print instruction is ill-typed.\n"
+  | Print_ill_typed _ ->
+      fmt "Print instruction is ill-typed. Expression is typed as %s but expected int.\n"
+      (ttos rep.obtained)
   | Unexpected_args (Sym s) ->
       fmt "Calling '%s' method with too much arguments.\n" s
   | Expected_args (Sym s) -> fmt "Missing arguments to call '%s' method.\n" s

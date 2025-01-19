@@ -234,7 +234,7 @@ and check_instr ctx env exp instr =
   let chk = check ctx env and chs = check_seq ctx env in
   match instr with
   | Print e -> (
-      match type_expr ctx env e with
+      match check ctx env e Int with
       | Ok _ -> Ok Void
       | Error rep -> report (Some Int) rep.obtained (Print_ill_typed e))
   | Set (loc, Inst (class_symbol, args)) -> (

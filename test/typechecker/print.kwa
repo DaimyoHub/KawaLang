@@ -1,0 +1,15 @@
+var foo test;
+
+class foo {
+  attr int bar;
+
+  method void foo() {
+    this.bar = 0;
+  }
+}
+
+main {
+  print(1);
+  print(true);
+  print(test);
+}
