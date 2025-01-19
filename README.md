@@ -2,7 +2,7 @@
 
 ## Contact
 
-The project is available of github : `githob.com/DaimyoHub/KawaLang`
+The project is available of github : `github.com/DaimyoHub/KawaLang`
 
   - `alexis.pocquet@universite-paris-saclay.fr`
   - `alexis.pocquet@etu-upsaclay.fr`
@@ -22,6 +22,8 @@ current implementation is a basic interpreter, with a static type checker.
 
 ## Interpreter architecture
 
+### The global architecture
+
 The interpreter is quite naive. The pipeline for code execution is divided
 in three sequential parts :
 
@@ -33,6 +35,92 @@ That two last components strongly depend on the next one, which is permanently b
 used during the interpretating process :
 
   - Symbol/name resolution
+
+### A global overview of the design
+
+As a given program is typically represented by an abstract syntax tree, both type checker and 
+interpreter are implemented as recursive functions, depending on mutually recursive sub-functions.
+They both go through the tree and type, check or execute the represented program.
+
+In the type checker, I have decided to use the Result monad to propagate the result of typing/
+checking functions. It made the syntax heavy at some points, but the binding operator "let*" 
+allowed me to clean it everywhere I hade to propagate errors, without reporting anything.
+Basically, every function that types/checks an expression/instruction work as the following sample :
+
+```ocaml
+let rec type_checker_func context current_env expr =
+    (* Maybe a match on the given expression *)
+    (* Maybe some operations mutating env and/or preparing expr *)
+    match another_type_checker_func context current_env with
+    | Ok typ ->
+        (* Checking typ *)
+        Ok some_type
+    | Error report -> 
+        (* Analyzing the report *)
+        report (Some expected_type) (Some obtained_type) (Error_kind infos)
+```
+
+In the interpreter, **we assume that the given AST representing some portion of the code is well-typed
+(i.e. it has been checked by the type checker)**. From this point of view, it was not necessary to
+check static properties of the program (instead for some features, see extensions) as it should have
+been done upstream. As a consequence, the code of the interpreter was not as heavy as in the type
+checker. Basically, the interpreting function works as the following sample :
+
+```ocaml
+let rec interpreter_func context current_env expr =
+    match expr with
+    | SomeExpr (a, b) ->
+        let va = some_interpreting_func context current_env
+        and vb = some_interpreting_func context current_env
+        in
+        (* Mutating the given current_env *)
+        (* Compute the value of the expression *)
+    | (* ... *)
+```
+
+Finally, calls to the symbol resolver could be done anywhere in type checking and interpretating
+functions.
+
+### Files and modules
+
++------------------------+------------------------------------------------------------------------+
+| lib/abstract_syntax.ml | Contains the type representing the abstract syntax of a program.       |
++------------------------+------------------------------------------------------------------------+
+| lib/context.ml         | Contains program structures such as class definition, method           |
+|                        | definition, program context, etc.                                      |
++------------------------+------------------------------------------------------------------------+
+| lib/environment.ml     | Contains the generic module Table that represents an associative table |
+|                        | and Env, an instance of Table representing an environment.             |
++------------------------+------------------------------------------------------------------------+
+| lib/symbol.ml          | Contains the type symbol.                                              |
++------------------------+------------------------------------------------------------------------+
+| lib/type.ml            | Contains representations of a program types.                           |
++------------------------+------------------------------------------------------------------------+
+| lib/lexer.mll          | The lexer.                                                             |
++------------------------+------------------------------------------------------------------------+
+| lib/parser.mly         | The parser.                                                            |
++------------------------+------------------------------------------------------------------------+
+| lib/type_checker.ml    | The type checker. It contains every type checking and typing           |
+|                        | functions.                                                             |
++------------------------+------------------------------------------------------------------------+
+| lib/interpreter.ml     | The interpreter. It contains every executing/evaluating functions.     |
++------------------------+------------------------------------------------------------------------+
+| lib/symbol_resolver.ml | The symbol resolver. It contains every function that checks the        |
+|                        | nature of symbols (classes, methods, locations...), and every function |
+|                        | that returns properties of program's objects.                          |
++------------------------+------------------------------------------------------------------------+
+| lib/type_error.ml      | It contains the interface to handle (report, propagating, printing out |
+|                        | type errors.                                                           |
++------------------------+------------------------------------------------------------------------+
+| lib/allocator.ml       | It contains functions allocating objects during the program execution. |
++------------------------+------------------------------------------------------------------------+
+| lib/levenshtein.ml     | It contains functions for the extension "did you mean ... ?".          |
++------------------------+------------------------------------------------------------------------+
+| lib/debug.ml           | It contains debugging functions.                                       |
++------------------------+------------------------------------------------------------------------+
+
+Every function is commented in the project. Comments do not exhaustivelly expose the behaviour of
+functions but at least, it gives their general behaviour.
 
 ### A general feedback
 
@@ -333,6 +421,14 @@ project design. Below is a list of the ones I dealt with :
     Figuring out how to update environments put at stake during a method call was also tricky.
     I just decided to copy each location of the calling environment in its proper initial
     location (globals, attributes...). It is quite naive but it does the work.
+
+### Implementation details of major features
+
+#### Method calls
+
+
+
+#### Inheritance features
 
 ### List of extensions
 
